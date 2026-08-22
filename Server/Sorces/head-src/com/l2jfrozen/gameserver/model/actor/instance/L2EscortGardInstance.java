@@ -1,6 +1,8 @@
 package com.l2jfrozen.gameserver.model.actor.instance;
 
 import com.l2jfrozen.gameserver.ai.CtrlIntention;
+import com.l2jfrozen.gameserver.ai.L2CharacterAI;
+import com.l2jfrozen.gameserver.ai.L2EscortGardAI;
 import com.l2jfrozen.gameserver.model.L2Attackable;
 import com.l2jfrozen.gameserver.model.L2Character;
 import com.l2jfrozen.gameserver.model.actor.position.L2CharPosition;
@@ -28,6 +30,28 @@ public class L2EscortGardInstance extends L2Attackable
 	{
 		super(objectId, template);
 	}
+
+	/**
+	 * Use {@link L2EscortGardAI} so the guard marches with its caravan instead of standing at its
+	 * spawn point while the convoy walks away.
+	 * @return this guard's AI
+	 */
+	@Override
+	public L2CharacterAI getAI()
+	{
+		if (aiCharacter == null)
+		{
+			synchronized (this)
+			{
+				if (aiCharacter == null)
+				{
+					aiCharacter = new L2EscortGardAI(new AIAccessor());
+				}
+			}
+		}
+
+		return aiCharacter;
+	}
 	
 	@Override
 	public void onSpawn()
@@ -44,14 +68,19 @@ public class L2EscortGardInstance extends L2Attackable
 	}
 	
 	/**
-	 * Escorts are fair game - a caravan raid has to get through them.
+	 * Escorts are fair game for players - a caravan raid has to get through them - but never for
+	 * other NPCs.<BR>
+	 * <BR>
+	 * {@link L2Character#doAttack} splashes polearm and AoE hits onto every nearby target for which
+	 * this returns true. Returning true for NPCs let one guard clip another, the victim retaliated,
+	 * and the whole convoy fought itself instead of the raiders.
 	 * @param  attacker whoever is looking for a fight
-	 * @return          true while the guard is alive
+	 * @return          true while the guard is alive and the attacker is a player or summon
 	 */
 	@Override
 	public boolean isAutoAttackable(final L2Character attacker)
 	{
-		return !isAlikeDead();
+		return !isAlikeDead() && attacker instanceof L2PlayableInstance;
 	}
 	
 	@Override

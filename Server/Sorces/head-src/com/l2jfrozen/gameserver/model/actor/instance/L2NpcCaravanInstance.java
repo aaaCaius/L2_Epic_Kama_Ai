@@ -182,10 +182,20 @@ public class L2NpcCaravanInstance extends L2Attackable
 		Broadcast.toKnownPlayers(this, new CreatureSay(getObjectId(), 0, getName(), chat));
 	}
 	
+	/**
+	 * Attackable by players and their summons only.<BR>
+	 * <BR>
+	 * It must NOT be attackable by other NPCs: {@link L2Character#doAttack} splashes polearm and AoE
+	 * hits onto every nearby target for which this returns true, so allowing NPCs would let an
+	 * escort's swing clip the caravan, which then calls the rest of the escort onto that guard - a
+	 * feedback loop that turns the convoy into a brawl.
+	 * @param  attacker whoever is looking for a fight
+	 * @return          true for a living caravan attacked by a player or summon
+	 */
 	@Override
 	public boolean isAutoAttackable(final L2Character attacker)
 	{
-		return !isAlikeDead();
+		return !isAlikeDead() && attacker instanceof L2PlayableInstance;
 	}
 	
 	@Override

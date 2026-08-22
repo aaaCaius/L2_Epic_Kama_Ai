@@ -9,6 +9,7 @@ import com.l2jfrozen.gameserver.model.L2NpcWalkerNode;
 import com.l2jfrozen.gameserver.model.L2Object;
 import com.l2jfrozen.gameserver.model.actor.instance.L2NpcCaravanInstance;
 import com.l2jfrozen.gameserver.model.actor.instance.L2NpcInstance;
+import com.l2jfrozen.gameserver.model.actor.instance.L2PlayableInstance;
 import com.l2jfrozen.gameserver.model.actor.position.L2CharPosition;
 
 /**
@@ -149,6 +150,14 @@ public class L2CaravanAI extends L2AttackableAI
 		final String factionId = caravan.getFactionId();
 
 		if (factionId == null || attacker == null)
+		{
+			return;
+		}
+
+		// Never call the escort onto another NPC. If a guard ever clips the caravan - splash damage,
+		// a stray AoE - siccing the rest of the convoy on it would start a brawl the raiders could
+		// just watch. Only players and their summons are valid targets for a faction call.
+		if (!(attacker instanceof L2PlayableInstance))
 		{
 			return;
 		}
