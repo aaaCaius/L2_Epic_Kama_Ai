@@ -479,4 +479,8 @@
 	<admin command="admin_zone_check" accessLevel="7" />
 	<admin command="admin_zone_reload" accessLevel="7" />
 
+	<!-- COORDINATES -->
+	<admin command="admin_get_coordinates" accessLevel="7" />
+	<admin command="admin_getcoordinates" accessLevel="7" />
+	<admin command="admin_loc" accessLevel="7" />
 </list>

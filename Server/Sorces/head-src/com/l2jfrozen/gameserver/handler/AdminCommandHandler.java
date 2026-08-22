@@ -27,6 +27,7 @@ import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminEditChar;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminEditNpc;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminEffects;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminEnchant;
+import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminGetCoordinates;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminExpSp;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminFightCalculator;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminFortSiege;
@@ -109,6 +110,7 @@ public class AdminCommandHandler
 		registerAdminCommandHandler(new AdminEditNpc());
 		registerAdminCommandHandler(new AdminEffects());
 		registerAdminCommandHandler(new AdminEnchant());
+		registerAdminCommandHandler(new AdminGetCoordinates());
 		registerAdminCommandHandler(new AdminExpSp());
 		registerAdminCommandHandler(new AdminFightCalculator());
 		registerAdminCommandHandler(new AdminFortSiege());
