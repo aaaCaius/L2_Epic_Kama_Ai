@@ -19,8 +19,11 @@ import com.l2jfrozen.gameserver.model.actor.instance.L2NpcCaravanInstance;
  */
 public class L2EscortGardAI extends L2AttackableAI
 {
-	/** How far the guard may drift from its caravan before closing the gap. */
-	private static final int FOLLOW_RANGE = 150;
+	/** Distance each guard keeps from the caravan when marching in formation. */
+	private static final int FORMATION_RADIUS = 90;
+
+	/** How far a guard may drift from its own slot before correcting. */
+	private static final int SLOT_TOLERANCE = 50;
 
 	/**
 	 * Cached caravan. Once found it is kept even if the caravan leaves the guard's knownlist -
@@ -72,8 +75,12 @@ public class L2EscortGardAI extends L2AttackableAI
 	}
 
 	/**
-	 * Close on the caravan if the guard has drifted too far.
-	 * @return true if a caravan was found and station keeping is handling this tick
+	 * March in formation around the caravan.<BR>
+	 * <BR>
+	 * Each guard is given its own slot on a ring around the caravan rather than following it
+	 * directly. AI_INTENTION_FOLLOW aims every guard at the same point, so they converged and
+	 * overlapped into one another; a per-guard slot keeps the convoy spread out.
+	 * @return true if a caravan was found and formation keeping is handling this tick
 	 */
 	private boolean keepStationOnCaravan()
 	{
@@ -85,19 +92,94 @@ public class L2EscortGardAI extends L2AttackableAI
 			return false;
 		}
 
-		if (guard.isInsideRadius(target, FOLLOW_RANGE, true, false))
+		final int slots = Math.max(1, countEscorts(target));
+		final int slot = formationSlot(target);
+
+		final double angle = 2 * Math.PI * slot / slots;
+		final int destX = target.getX() + (int) (Math.cos(angle) * FORMATION_RADIUS);
+		final int destY = target.getY() + (int) (Math.sin(angle) * FORMATION_RADIUS);
+		final int destZ = target.getZ();
+
+		if (guard.isInsideRadius(destX, destY, destZ, SLOT_TOLERANCE, true, false))
 		{
-			// Close enough - hold position rather than jittering around the caravan.
+			// On station - hold, so the guard does not jitter around its slot.
 			return true;
 		}
 
-		if (getIntention() != CtrlIntention.AI_INTENTION_FOLLOW || getTarget() != target)
+		// FOLLOW would override the slot with the caravan's own position, so drive movement directly.
+		if (getIntention() == CtrlIntention.AI_INTENTION_FOLLOW)
 		{
-			guard.setRunning();
-			setIntention(CtrlIntention.AI_INTENTION_FOLLOW, target);
+			stopFollow();
 		}
 
+		guard.setRunning();
+		moveTo(destX, destY, destZ);
+
 		return true;
+	}
+
+	/**
+	 * This guard's index among the caravan's escort, derived from object id order so every guard
+	 * computes the same ordering and no two claim the same slot.
+	 * @param  target the caravan being escorted
+	 * @return        a stable slot index, 0-based
+	 */
+	private int formationSlot(final L2NpcCaravanInstance target)
+	{
+		final int myId = getActor().getObjectId();
+		final String factionId = getActor().getFactionId();
+
+		int index = 0;
+
+		for (final L2Object obj : target.getKnownList().getKnownObjects().values())
+		{
+			if (!(obj instanceof L2EscortGardInstance) || obj == getActor())
+			{
+				continue;
+			}
+
+			final L2EscortGardInstance other = (L2EscortGardInstance) obj;
+
+			if (other.isDead() || factionId == null || !factionId.equalsIgnoreCase(other.getFactionId()))
+			{
+				continue;
+			}
+
+			if (other.getObjectId() < myId)
+			{
+				index++;
+			}
+		}
+
+		return index;
+	}
+
+	/**
+	 * @param  target the caravan being escorted
+	 * @return        how many living escorts share this caravan, including this guard
+	 */
+	private int countEscorts(final L2NpcCaravanInstance target)
+	{
+		final String factionId = getActor().getFactionId();
+
+		int count = 1;
+
+		for (final L2Object obj : target.getKnownList().getKnownObjects().values())
+		{
+			if (!(obj instanceof L2EscortGardInstance) || obj == getActor())
+			{
+				continue;
+			}
+
+			final L2EscortGardInstance other = (L2EscortGardInstance) obj;
+
+			if (!other.isDead() && factionId != null && factionId.equalsIgnoreCase(other.getFactionId()))
+			{
+				count++;
+			}
+		}
+
+		return count;
 	}
 
 	/**
