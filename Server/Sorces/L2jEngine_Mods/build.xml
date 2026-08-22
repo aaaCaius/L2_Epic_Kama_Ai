@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="L2J_EngineMods" default="dist" basedir=".">
+
+	<property name="workspace" location="${ant.file}/../.." />
+	
+	<target name="dist" depends="jar">
+		<copy todir="build/gameserver">
+			<fileset dir="dist/gameserver">
+			</fileset>
+		</copy>
+		
+		<delete dir="build/classes"/>
+	</target>
+
+	<target name="jar" depends="compile" description="Create the jar file.">
+		<jar destfile="build/gameserver/lib/L2J_EngineMods.jar">
+			<fileset dir="build/classes" />
+			<manifest>
+				<attribute name="Main-Class" value="main.EngineModsManager" />
+				<attribute name="Class-Path" value="${manifest.libs}" />
+			</manifest>
+		</jar>
+	
+	</target>
+
+	<target name="compile" depends="init" description="Compile the source.">
+		<javac srcdir="src" classpathref="classpath" destdir="build/classes" debug="true" debuglevel="lines,vars,source" includeantruntime="false" />
+	</target>
+	
+	<target name="init" depends="clean,checkRequirements" description="Create the output directories.">
+		<mkdir dir="build" />
+		<mkdir dir="build/classes" />
+		<mkdir dir="build/gameserver/lib" />
+	</target>	
+	
+	<target name="clean" description="Remove the output directories.">
+		<delete dir="build" />
+	</target>
+
+	<target name="checkRequirements" description="Check requirements.">
+		<echo>Ant version: ${ant.version}</echo> 
+		<echo>Ant Java version: ${ant.java.version}</echo> 
+		<echo>Java detail version: ${java.version}</echo>
+
+		<!-- Make sure Java 11 version is being used -->
+		<condition property="java11">
+			<javaversion atleast="11"/>
+		</condition>    
+		<fail unless="java11">Java 11 version is necessary to compile the core!</fail>
+	</target>
+	
+	<path id="L2jFrozen_15.classpath">
+		<pathelement location="${workspace}/L2jFrozen_15/bin"/>
+	</path>
+
+	<path id="classpath">
+		<pathelement location="bin"/>
+		<path refid="L2jFrozen_15.classpath"/>
+	</path>
+
+	<pathconvert property="manifest.libs" pathsep=" ">
+		<path refid="classpath" />
+		<mapper>
+			<chainedmapper>
+				<flattenmapper />
+				<globmapper from="*.jar" to="*.jar" />
+			</chainedmapper>
+		</mapper>
+	</pathconvert>	
+	
+</project>
