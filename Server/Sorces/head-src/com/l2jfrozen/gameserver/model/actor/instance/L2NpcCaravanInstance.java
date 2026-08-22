@@ -32,6 +32,18 @@ public class L2NpcCaravanInstance extends L2Attackable
 	/** Guards against a double death event dropping the cargo twice. */
 	private volatile boolean cargoSpilled;
 	
+	/**
+	 * Route progress lives on the NPC, not the AI.<BR>
+	 * <BR>
+	 * {@link com.l2jfrozen.gameserver.ai.L2AttackableAI#changeIntention} detaches the AI from an idle
+	 * attackable whose knownlist is empty, and {@link #getAI()} then builds a fresh one. Holding the
+	 * waypoint index here means the caravan resumes its journey instead of restarting it every time
+	 * the road goes quiet.
+	 */
+	private int routePos = -1;
+	
+	private boolean walkingToNextPoint;
+	
 	public L2NpcCaravanInstance(final int objectId, final L2NpcTemplate template)
 	{
 		super(objectId, template);
@@ -139,6 +151,26 @@ public class L2NpcCaravanInstance extends L2Attackable
 		{
 			LOGGER.info("L2NpcCaravanInstance: npc " + getNpcId() + " spilled " + dropped + "/" + manifest.size() + " cargo item(s) at " + getX() + ", " + getY() + ", " + getZ() + ".");
 		}
+	}
+	
+	public int getRoutePos()
+	{
+		return routePos;
+	}
+	
+	public void setRoutePos(final int pos)
+	{
+		routePos = pos;
+	}
+	
+	public boolean isWalkingToNextPoint()
+	{
+		return walkingToNextPoint;
+	}
+	
+	public void setWalkingToNextPoint(final boolean value)
+	{
+		walkingToNextPoint = value;
 	}
 	
 	/**
