@@ -150,14 +150,15 @@ public class L2GludioCaravMngInstance extends L2FolkInstance
 
 		if (manifest.isEmpty())
 		{
-			rows.append("<tr><td>The caravan is carrying nothing.</td></tr>");
+			rows.append("<tr><td width=270>The caravan is carrying nothing.</td></tr>");
 		}
 		else
 		{
+			// Column widths match the enclosing table in the .htm page.
 			for (final CargoItem cargo : manifest)
 			{
-				rows.append("<tr><td width=150>").append(itemName(cargo.getItemId()));
-				rows.append("</td><td width=60 align=right><font color=\"LEVEL\">").append(cargo.getCount());
+				rows.append("<tr><td width=170>").append(itemName(cargo.getItemId()));
+				rows.append("</td><td align=right width=100><font color=\"LEVEL\">").append(cargo.getCount());
 				rows.append("</font></td></tr>");
 			}
 		}
