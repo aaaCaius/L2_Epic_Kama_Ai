@@ -1,0 +1,8 @@
+Hello 
+
+For development the following tools are required:
+1. JDK - Java development kit - java run-time env
+2. Eclipse for Java [Optional] - used for building the clientserver and game server
+3. HeidiSQL [Optional] - used for DB edditiong
+4. XAMP or Maria DB - Used for local mySQL server.
+5. SVN turtoise [Optional] - used for version managment 

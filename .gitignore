@@ -1,0 +1,57 @@
+# L2Epic — source and config only. No build artifacts, no logs.
+#
+# Two deliberate exceptions are made below for content that cannot be regenerated:
+#   1. Client/system/ in full  — hand-patched client binaries
+#   2. the two jars Server 2 actually runs on
+# Everything else excluded here is either rebuildable from source, re-downloadable,
+# runtime state, or static upstream data restorable from Development.7z.
+
+# ---------------------------------------------------------------- archives
+*.7z
+
+# ------------------------------------------- build output & compiled classes
+Server/output/
+Server/Sorces/build/
+Server/Sorces/build-core/
+Server/Sorces/bin/
+Server/Sorces/L2jEngine_Mods/bin/
+Server/Sorces/L2jEngine_Mods/build/
+*.class
+*$py.class
+
+# ------------------------------------------------------------------- jars
+# Dependencies and build output. Exception: the exact pair Server 2 runs on,
+# so the running server stays reproducible byte-for-byte.
+*.jar
+!Deployemnt/gameserver/lib/l2jfrozen-core.jar
+!Deployemnt/gameserver/lib/L2J_EngineMods.jar
+
+# --------------------------------------------------- logs & runtime state
+Deployemnt/*/log/
+Deployemnt/gameserver/data/clans/
+Deployemnt/gameserver/data/crests/
+**/lib/cachedir/
+*.error.LOGGER
+
+# ------------------------------------------------- static binary map data
+# ~652 MB, byte-identical in dist/ and Deployemnt/, never hand-edited.
+# Restore from Development.7z on a fresh clone.
+**/data/geodata/
+**/data/pathnode/
+
+# ---------------------------------------------------- datapack duplication
+# Deployemnt/gameserver/data/ is integrated FROM dist/ and is byte-identical to
+# it, so dist/ is tracked as canonical and this copy is not. config/ and sql/
+# are siblings of data/ (not children) and remain tracked on both sides,
+# because they have drifted and that drift must not be lost.
+Deployemnt/gameserver/data/
+
+# ------------------------------------------- third-party binary tooling
+Tools/*.exe
+
+# ------------------------------------------------ secrets / machine-local
+hexid.txt
+
+# --------------------------------------------- foreign VCS & AI scaffolding
+.svn/
+.agent/

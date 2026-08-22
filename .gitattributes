@@ -1,0 +1,25 @@
+# Normalize line endings. The machine has core.autocrlf=true globally, which would
+# otherwise give every .sh file CRLF and break it on a Linux host.
+* text=auto
+
+*.sh   text eol=lf
+*.bat  text eol=crlf
+*.java text eol=lf
+*.py   text eol=lf
+*.xml  text eol=lf
+*.properties text eol=lf
+
+# Binary — never munge
+*.jar binary
+*.u binary
+*.dll binary
+*.dat binary
+*.int binary
+*.l2j binary
+*.7z binary
+*.exe binary
+*.gly binary
+*.ttf binary
+*.des binary
+*.xdat binary
+*.bin binary
