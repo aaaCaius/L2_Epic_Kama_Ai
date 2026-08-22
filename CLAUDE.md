@@ -1,8 +1,13 @@
 # L2Epic — modded Lineage 2 Interlude server
 
 A custom **L2JFrozen 1.5** private server (Interlude / C6, protocol 740–746). Java source built with
-Ant, run against MariaDB. Full analysis in
-[AI_Tools/docs/architecture-review.md](AI_Tools/docs/architecture-review.md).
+Ant, run against MariaDB.
+
+- [AI_Tools/docs/architecture-review.md](AI_Tools/docs/architecture-review.md) — project structure,
+  the datapack model, known defects
+- [AI_Tools/docs/server-internals.md](AI_Tools/docs/server-internals.md) — reverse-engineered
+  reference: database layer, netcore, encryption, protocol, threading, world grid, spawning, buffs,
+  items, mobs and drops
 
 ---
 
