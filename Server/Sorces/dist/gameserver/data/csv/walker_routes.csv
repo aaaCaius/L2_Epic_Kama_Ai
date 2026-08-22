@@ -167,12 +167,25 @@
 12;32070;10;NULL;87351;-140059;-1536;5;True
 12;32070;11;NULL;89343;-140746;-1536;1;True
 12;32070;12;NULL;90605;-143167;-1536;1;True
-# route 13 - Caravan Leader (100203) test journey. Short there-and-back loop
-# between the caravan spawn and the northern waypoint, using ground already
-# proven walkable by the existing caravan/escort spawn points.
-13;100203;1;The caravan sets out.;-86212;240126;-3696;10;False
-13;100203;2;NULL;-86225;240307;-3712;3;False
-13;100203;3;NULL;-86135;240436;-3712;3;False
-13;100203;4;Goods for sale, fresh from the road!;-86342;240988;-3751;15;False
-13;100203;5;NULL;-86135;240436;-3712;3;False
-13;100203;6;NULL;-86225;240307;-3712;3;False
+# route 13 - Caravan Leader (100203). Round trip: outbound points 1-9,
+# returning along the same road via 10-16, then looping back to 1.
+# Three-second halt at the two ends (points 1 and 9); no pause between.
+# NOTE: points 7 and 11 were supplied as Y=-237612. That is a 473k-unit
+# jump across the map and both neighbours sit near Y=+237700, so the sign
+# is treated as a typo and Y=237612 is used.
+13;100203;1;The caravan sets out.;-85884;241452;-3728;3;False
+13;100203;2;NULL;-87793;239297;-3667;0;False
+13;100203;3;NULL;-91259;238595;-3734;0;False
+13;100203;4;NULL;-91944;238374;-3672;0;False
+13;100203;5;NULL;-94308;236045;-3576;0;False
+13;100203;6;NULL;-95226;235736;-3518;0;False
+13;100203;7;NULL;-97808;237612;-3584;0;False
+13;100203;8;NULL;-98387;237918;-3584;0;False
+13;100203;9;Goods for sale, fresh from the road!;-99762;238612;-3599;3;False
+13;100203;10;NULL;-98387;237918;-3584;0;False
+13;100203;11;NULL;-97808;237612;-3584;0;False
+13;100203;12;NULL;-95226;235736;-3518;0;False
+13;100203;13;NULL;-94308;236045;-3576;0;False
+13;100203;14;NULL;-91944;238374;-3672;0;False
+13;100203;15;NULL;-91259;238595;-3734;0;False
+13;100203;16;NULL;-87793;239297;-3667;0;False
