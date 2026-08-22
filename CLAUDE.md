@@ -201,8 +201,16 @@ npc id 100204  "Soldier"  type = L2EscortGard   (in `npc` table)
 ```
 
 The core resolves an NPC type by appending `Instance`, so it looks for `L2EscortGardInstance` — which
-exists in no source file. Custom spawn loading aborts. Fix by writing the class, retyping to an
-existing one (`L2Guard`), or deleting the 2 spawn rows.
+exists in no source file.
+
+**The blast radius is bigger than one NPC.** `SpawnTable.fillSpawnTable` wraps the whole
+`while (rset.next())` loop in a single `try/catch`, so the throw kills **every remaining row**. Live
+on 2026-08-22 15:52: `custom_spawnlist` holds **16** rows and only **11** spawns loaded — and the
+server still logged `CustomSpawnTable: Loaded 11 Npc Spawn Locations` and started normally. The loss
+is silent.
+
+Fix by writing the class, retyping to an existing one (`L2Guard`), or deleting the 2 spawn rows
+(`id 223856`, `226346`).
 
 **4. `data/xml/globalDrop.xml` is missing**, upstream too. It stopped erroring after the Oct 2024
 deploy; worth confirming rather than assuming resolved.

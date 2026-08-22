@@ -373,9 +373,29 @@ constructor = Class.forName(
 The `type` column in `npc` / `custom_npc` is concatenated with `"Instance"` and resolved by name.
 Type `L2Guard` → class `L2GuardInstance`.
 
-**A type with no matching class throws `ClassNotFoundException` and aborts spawn table loading** —
-not just that NPC, the whole pass. This is exactly [Known Issue 3](../../CLAUDE.md#known-issues):
-npc `100204` "Soldier" typed `L2EscortGard` with no `L2EscortGardInstance` class.
+**A type with no matching class throws `ClassNotFoundException`, and the damage is wider than that one
+NPC.** In `datatables/sql/SpawnTable.java` the `try/catch` wraps the *entire* `while (rset.next())`
+loop rather than each iteration:
+
+```java
+        }                    // end while (rset.next())
+    }
+    catch (Exception e) {
+        LOGGER.error("SpawnTable.fillSpawnTable: Custom spawn could not be initialized ", e);
+    }
+    if (customSpawnCount > 0)
+        LOGGER.info("CustomSpawnTable: Loaded " + customSpawnCount + " Npc Spawn Locations. ");
+```
+
+So one bad row **terminates every remaining iteration**. Rows already processed are kept; rows after
+it are dropped. The server then logs a cheerful `Loaded N` line and starts normally — the truncation
+is silent, and the count looks legitimate unless you compare it against the table.
+
+Observed live on 2026-08-22 15:52: `custom_spawnlist` holds **16** rows, **11** spawns loaded, one
+`ClassNotFoundException` in between. See [Known Issue 3](../../CLAUDE.md#known-issues) — npc `100204`
+"Soldier" typed `L2EscortGard`, with no `L2EscortGardInstance` class.
+
+A per-row `try/catch` inside the loop would make this fail-soft instead.
 
 Constructor signature is fixed: `(int objectId, L2NpcTemplate template)`.
 
@@ -630,6 +650,7 @@ silently voiding the item.
 
 **Three invariants worth remembering:**
 
-1. An NPC `type` with no `<type>Instance` class **aborts all spawn loading** — not just that NPC.
+1. An NPC `type` with no `<type>Instance` class kills **every remaining row** of the spawn load, and
+   the server still reports a healthy `Loaded N` — silent truncation, not a visible failure.
 2. Anything not in a player's knownlist is invisible to them, no matter what you broadcast.
 3. Item mutations write through to the database immediately; character state does not.
