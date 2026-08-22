@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.l2jfrozen.Config;
 import com.l2jfrozen.gameserver.datatables.csv.NpcWalkerRoutesTable;
+import com.l2jfrozen.gameserver.managers.CaravanSpawnManager;
 import com.l2jfrozen.gameserver.model.L2Character;
 import com.l2jfrozen.gameserver.model.L2NpcWalkerNode;
 import com.l2jfrozen.gameserver.model.L2Object;
@@ -312,6 +313,14 @@ public class L2CaravanAI extends L2AttackableAI
 
 		announce(node.getChatText());
 
+		// End of the road: the convoy has completed its circuit and leaves the world.
+		if (pos == route.size() - 1)
+		{
+			getActor().setWalkingToNextPoint(false);
+			CaravanSpawnManager.getInstance().despawnConvoy(getActor());
+			return;
+		}
+
 		long delay = node.getDelay() * 1000L;
 
 		if (delay < 0)
@@ -332,7 +341,14 @@ public class L2CaravanAI extends L2AttackableAI
 	{
 		final L2NpcCaravanInstance caravan = getActor();
 
-		final int pos = caravan.getRoutePos() < route.size() - 1 ? caravan.getRoutePos() + 1 : 0;
+		// One-way journey - the route is walked once, not looped. Reaching the last waypoint
+		// despawns the convoy in arriveAtWaypoint, so there is nothing to wrap around to.
+		if (caravan.getRoutePos() >= route.size() - 1)
+		{
+			return;
+		}
+
+		final int pos = caravan.getRoutePos() + 1;
 		caravan.setRoutePos(pos);
 
 		final L2NpcWalkerNode node = route.get(pos);

@@ -1,6 +1,9 @@
 package com.l2jfrozen.gameserver.model.actor.instance;
 
+import com.l2jfrozen.gameserver.managers.CaravanSpawnManager;
+import com.l2jfrozen.gameserver.managers.CaravanSpawnManager.SpawnResult;
 import com.l2jfrozen.gameserver.network.serverpackets.ActionFailed;
+import com.l2jfrozen.gameserver.network.serverpackets.NpcHtmlMessage;
 import com.l2jfrozen.gameserver.templates.L2NpcTemplate;
 
 /**
@@ -27,6 +30,8 @@ public class L2GludioCaravMngInstance extends L2FolkInstance
 
 	private static final String BYPASS_CLOSE = "close";
 
+	private static final String BYPASS_SPAWN = "spawn_caravan";
+
 	public L2GludioCaravMngInstance(final int objectId, final L2NpcTemplate template)
 	{
 		super(objectId, template);
@@ -42,7 +47,13 @@ public class L2GludioCaravMngInstance extends L2FolkInstance
 
 		final String page = val == 0 ? String.valueOf(getNpcId()) : getNpcId() + "-" + val;
 
-		showChatWindow(player, HTML_PATH + page + ".htm");
+		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+		html.setFile(HTML_PATH + page + ".htm");
+		html.replace("%objectId%", String.valueOf(getObjectId()));
+		html.replace("%active%", String.valueOf(CaravanSpawnManager.getInstance().getActiveCount()));
+		html.replace("%max%", String.valueOf(CaravanSpawnManager.MAX_CONVOYS));
+		player.sendPacket(html);
+		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}
 
 	@Override
@@ -58,6 +69,35 @@ public class L2GludioCaravMngInstance extends L2FolkInstance
 			// Sending ActionFailed with no replacement HTML is how this codebase dismisses a dialog -
 			// see Repair.repair_close_win.
 			player.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
+
+		if (command.startsWith(BYPASS_SPAWN))
+		{
+			final CaravanSpawnManager manager = CaravanSpawnManager.getInstance();
+			final SpawnResult result = manager.spawnConvoy();
+
+			switch (result)
+			{
+				case OK:
+					player.sendMessage("Caravan dispatched. " + manager.getActiveCount() + " of " + CaravanSpawnManager.MAX_CONVOYS + " on the road.");
+					break;
+
+				case AT_CAPACITY:
+					player.sendMessage("No more caravans can be dispatched - " + CaravanSpawnManager.MAX_CONVOYS + " are already on the road.");
+					break;
+
+				case NO_ROUTE:
+					player.sendMessage("The caravan has no route defined. Check walker_routes.csv.");
+					break;
+
+				default:
+					player.sendMessage("The caravan could not be dispatched. See the server log.");
+					break;
+			}
+
+			// Reopen so the active count on the page is current.
+			showChatWindow(player, 0);
 			return;
 		}
 
