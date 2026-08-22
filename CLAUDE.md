@@ -19,6 +19,8 @@ result *runs*. Two processes:
 | GameServer | `Deployemnt/gameserver/` | 7777 |
 
 Database: MariaDB, schema **`frozen`**, shared by both. User `root`, empty password, `127.0.0.1`.
+See [Database](#database) — there are sibling schemas on the same instance, so confirm you are on
+`frozen` before running anything.
 
 ### 2. `dist/` → `Deployemnt/` is the datapack model
 
@@ -95,6 +97,43 @@ the version-skew issues below.
 
 ---
 
+## Database
+
+MariaDB, running from `d:\company\web_dev\mysql\` (XAMPP-style), listening on `127.0.0.1:3306`.
+Credentials `root` / no password. HeidiSQL is the usual GUI; the CLI is at
+`d:\company\web_dev\mysql\bin\mysql.exe` (not on PATH).
+
+```bash
+"/d/company/web_dev/mysql/bin/mysql.exe" -h 127.0.0.1 -u root frozen -e "SHOW TABLES;"
+```
+
+**`frozen` is the live schema** — 123 tables, 22.9 MB, used by *both* the login and game server.
+
+| | |
+|---|---|
+| Static game data | `spawnlist` 37k rows, `droplist` 27k, `npcskills` 25k, `territories` 18k, `npc` 7.4k |
+| Live player data | 38 accounts, 20 characters, 2 clans, 1018 items |
+
+**Sibling schemas on the same instance — do not confuse them for `frozen`:**
+
+| Schema | Tables | Note |
+|---|---|---|
+| `gameserver_beta` | 132 | separate beta pair |
+| `loginserver_beta` | 3 | |
+| `l2jdb` | 92 | older/unrelated L2J database |
+
+Two classes of table live side by side and behave differently:
+
+- **Datapack tables** (`npc`, `spawnlist`, `droplist`, …) are reloaded from SQL on install. Edits
+  belong in `dist/gameserver/sql/`, not made directly in HeidiSQL, or they are lost on reinstall.
+- **`custom_*` tables** (`custom_npc`, `custom_spawnlist`) hold this server's additions and are the
+  right place for new NPCs and spawns.
+- **Player tables** (`characters`, `items`, `accounts`, `clan_data`) are live state — never
+  reinstall over them. `DBExport/DB.sql` is a 2020 snapshot, not a current backup.
+
+A caution learned the hard way: **adding a row to `custom_npc`/`npc` with a `type` that has no
+matching Java class aborts spawn loading at startup** — see Known Issue 3.
+
 ## Where to add a mod
 
 Reuse the existing extension points rather than inventing new ones:
@@ -125,20 +164,22 @@ Mid-rate PvP. Changing these changes the server's character — confirm before t
 
 ## Known issues
 
-**1. Outstanding DB migration — the most pressing defect.**
-The Oct 2024 build was deployed on 2026-08-22 without its schema migration. The jar expects new table
-names; the live `frozen` database still has the old ones:
+**1. Outstanding DB migration — one missing table.**
+The Oct 2024 build was deployed on 2026-08-22 without its schema migration. Verified against the live
+`frozen` database, most of it is already correct:
 
-| live DB (old) | jar expects (new) |
-|---|---|
-| `character_skill_reuse_delays` | `character_skills_reuse_delay` |
-| `character_skill_effects` | `character_skills_save` |
-| `clan_privs` PK `(clan_id, rank)` | `clan_privs` + `party` col, PK `(clan_id, rank, party)` |
+| Table | Live state | Action |
+|---|---|---|
+| `clan_privs` | already has `party` as PRI | none — already migrated |
+| `character_skills_save` | exists, 3 rows | none |
+| `character_skills_reuse_delay` | **missing** | **create it** |
+| `character_skill_reuse_delays` | old name, 0 rows | drop once the new one exists |
+| `character_skill_effects` | old name, 59 rows, identical columns to `character_skills_save` | copy the 59 rows across, then drop |
 
-Symptom: `Table 'frozen.character_skills_reuse_delay' doesn't exist`, plus
-`storeEffect`/`restoreEffects` failures — **skill persistence is broken in both directions**, and
-logins have failed with an `EnterWorld` NPE. Fix requires migrating the three tables *and* updating
-`Deployemnt/gameserver/sql/install/` to match `dist/`.
+Symptom: `Table 'frozen.character_skills_reuse_delay' doesn't exist`. Saving works (the `_save` table
+is present); the reuse-delay lookup throws. Schema for the new table is in
+`Server/Sorces/dist/gameserver/sql/install/character_skills_reuse_delay.sql`. Also update
+`Deployemnt/gameserver/sql/install/` to match `dist/` so the drift does not resurface.
 
 **2. Config drift between `dist/` and `Deployemnt/`.**
 8 files differ: `GM.xml`, `altsettings`, `boss`, `enchant`, `other`, `rates`, `sevensigns`,
@@ -146,9 +187,17 @@ logins have failed with an `EnterWorld` NPE. Fix requires migrating the three ta
 is still stock. A full `ant build` plus clean integration would silently revert the server to ×1
 rates. Closing this means promoting the `Deployemnt/` values into `dist/`.
 
-**3. `ClassNotFoundException: L2EscortGardInstance`** at `SpawnTable.java:150`. A row in the live
-`custom_spawnlist` table names an NPC type that exists in no source and no jar, and is absent from
-`DBExport/DB.sql` — it was added straight to the live DB. Custom spawn loading aborts.
+**3. `ClassNotFoundException: L2EscortGardInstance`** at `SpawnTable.java:150`. Traced to a single
+NPC added straight to the live DB, absent from `DBExport/DB.sql`:
+
+```
+npc id 100204  "Soldier"  type = L2EscortGard   (in `npc` table)
+└── 2 spawn rows in custom_spawnlist
+```
+
+The core resolves an NPC type by appending `Instance`, so it looks for `L2EscortGardInstance` — which
+exists in no source file. Custom spawn loading aborts. Fix by writing the class, retyping to an
+existing one (`L2Guard`), or deleting the 2 spawn rows.
 
 **4. `data/xml/globalDrop.xml` is missing**, upstream too. It stopped erroring after the Oct 2024
 deploy; worth confirming rather than assuming resolved.

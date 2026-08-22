@@ -67,6 +67,53 @@ the config drift is closed; until then, Eclipse debugging tests different settin
 
 ---
 
+## 3a. The database
+
+MariaDB running from `d:\company\web_dev\mysql\` (XAMPP-style), on `127.0.0.1:3306`, `root` with no
+password. CLI at `d:\company\web_dev\mysql\bin\mysql.exe` (not on PATH); HeidiSQL is the usual GUI.
+
+**`frozen` is the live schema** — 123 tables, 22.9 MB, shared by *both* the login and game server.
+Measured 2026-08-22:
+
+| Largest tables | Rows |
+|---|---|
+| `spawnlist` | 37,154 |
+| `droplist` | 27,489 |
+| `npcskills` | 25,017 |
+| `territories` | 18,314 |
+| `merchant_buylists` | 17,884 |
+| `enchant_skill_trees` | 14,637 |
+| `npc` | 7,372 |
+
+Live player data: 38 accounts, 20 characters, 2 clans, 1,018 items.
+
+**Sibling schemas on the same MariaDB instance** — easy to confuse for `frozen`:
+
+| Schema | Tables | Size | Note |
+|---|---|---|---|
+| `frozen` | 123 | 22.9 MB | **the live pair** |
+| `gameserver_beta` | 132 | 15.3 MB | separate beta gameserver |
+| `loginserver_beta` | 3 | ~0 | separate beta login |
+| `l2jdb` | 92 | 13.4 MB | older/unrelated L2J database |
+
+Also present: `new_test_db`, `test`, `test2`, `phpmyadmin`.
+
+### Three classes of table, with different rules
+
+- **Datapack tables** — `npc`, `spawnlist`, `droplist`, `merchant_buylists`, skill trees. Populated
+  from `dist/gameserver/sql/`. Editing these directly in HeidiSQL means the change is lost on the
+  next SQL reinstall; edit the `.sql` files instead.
+- **`custom_*` tables** — `custom_npc`, `custom_spawnlist`. This server's own additions, and the
+  correct place for new NPCs and spawns.
+- **Player tables** — `characters`, `items`, `accounts`, `clan_data`. Live state. Never reinstall
+  over them. `DBExport/DB.sql` is a March 2020 snapshot, **not** a current backup — there is no
+  automated backup of live player data.
+
+**Trap:** an NPC row whose `type` has no matching Java class aborts spawn loading at startup. That is
+exactly Finding C.
+
+---
+
 ## 4. Source layout — 1390 Java files
 
 `Server/Sorces/head-src/com/l2jfrozen/`:
@@ -186,35 +233,54 @@ the **Oct 2024** build (`76d1b241…` and `ed5a78e4…`).
 `data/scripts/custom/5001_NewbieCoupons/__init__.py:4` no longer throws `ImportError`. Its leftover
 `.error.LOGGER` file is stamped 13:49 and is stale.
 
-**What it broke** — the jar moved generations but the `frozen` database did not:
+**What it broke** — the jar moved generations but `Deployemnt/gameserver/sql/install/` did not, so
+the datapack SQL still describes the old schema. The `sql/install/` files differ as follows:
 
-| Deployemnt / live DB (old) | dist / Oct 2024 jar expects (new) |
+| Deployemnt SQL (old) | dist SQL (new) |
 |---|---|
 | `character_skill_reuse_delays` | `character_skills_reuse_delay` |
 | `character_skill_effects` | `character_skills_save` |
 | `clan_privs` PK `(clan_id, rank)` | `clan_privs` + `party` col, PK `(clan_id, rank, party)` |
 
+**Queried against the live `frozen` database on 2026-08-22, most of this is already correct** — the
+drift is in the datapack SQL files more than in the database itself:
+
+| Table | Live state | Action needed |
+|---|---|---|
+| `clan_privs` | already has `party` as PRI | none |
+| `character_skills_save` | exists, 3 rows | none |
+| `character_skills_reuse_delay` | **missing** | **create it** |
+| `character_skill_reuse_delays` | old name, 0 rows | drop once new one exists |
+| `character_skill_effects` | old name, 59 rows, columns identical to `character_skills_save` | copy 59 rows across, then drop |
+
 Confirmed live in the 14:11 run:
 
 ```
 Table 'frozen.character_skills_reuse_delay' doesn't exist
-L2PcInstance.storeEffect: Could not store char effect data into character_skill_effects
 L2PcInstance.restoreEffects : Could not restore active effect data
 ```
 
-Skill persistence is broken in both directions, and an earlier attempt shows
-`Failed reading: [C] 03 EnterWorld … Map.get(Object) is null` on a real login.
+Saving works — `character_skills_save` is present. It is the reuse-delay lookup that throws. An
+earlier run also shows `Failed reading: [C] 03 EnterWorld … Map.get(Object) is null` on a real login.
 
-**Deploying a jar is not a file copy.** The three tables must be migrated in the live `frozen`
-database in the same operation, and `Deployemnt/gameserver/sql/install/` updated to match `dist/`.
-**This is the server's most pressing outstanding defect.**
+**Deploying a jar is not always just a file copy** — check whether the build's `sql/install/` differs
+from the deployed one. Here the remaining work is to create one table, move 59 rows, and update
+`Deployemnt/gameserver/sql/install/` to match `dist/` so the drift does not resurface.
 
 ## Finding C — two further startup errors
 
 - **`ClassNotFoundException: L2EscortGardInstance`** at `SpawnTable.java:150` — still firing at
-  14:11:25. A row in the live `custom_spawnlist` table names an NPC type present in no source and no
-  jar, and not in `DBExport/DB.sql` — it was added straight to the live DB. Custom spawn loading
-  aborts.
+  14:11:25. Traced in the live DB to a single NPC added straight to the database, absent from
+  `DBExport/DB.sql`:
+
+  ```
+  npc id 100204  "Soldier"  type = L2EscortGard   (in the `npc` table)
+  └── 2 spawn rows in custom_spawnlist
+  ```
+
+  The core resolves an NPC type by appending `Instance`, so it looks for `L2EscortGardInstance`,
+  which exists in no source file. Custom spawn loading aborts. Fix by writing the class, retyping to
+  an existing one (`L2Guard`), or deleting the 2 spawn rows.
 - **`data/xml/globalDrop.xml` is absent** (also missing from `dist/`, i.e. missing upstream). It did
   not raise an error in the 14:11 run, unlike earlier runs — worth a second look rather than
   assuming it is resolved.
