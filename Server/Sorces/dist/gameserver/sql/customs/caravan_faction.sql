@@ -24,3 +24,8 @@ UPDATE `npc` SET `faction_id` = 'caravan', `faction_range` = 1000
 -- cosmetic. At 150 it outruns an unbuffed player but a buffed one can still run
 -- it down, so killing the escort first stays the sensible tactic.
 UPDATE `npc` SET `level` = 20, `runspd` = 150 WHERE `id` = 100203;
+
+-- The Caravan Manager is a town NPC, not a fighter, but was created holding a
+-- Bec de Corbin (item 94) - copied from the Soldier escort, which uses the same.
+-- Clear both hands so it stands unarmed.
+UPDATE `npc` SET `rhand` = 0, `lhand` = 0 WHERE `id` = 100205;
