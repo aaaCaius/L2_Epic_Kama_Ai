@@ -72,8 +72,10 @@ public class L2CaravanAI extends L2AttackableAI
 	@Override
 	protected void onEvtThink()
 	{
-		// Cornered and undefended: hand back to the normal attackable brain so it fights for its life.
-		if (isCornered())
+		// Actually fighting: hand back to the normal attackable brain to run the engagement.
+		// This is gated on real combat, NOT on whether an escort is nearby - travelling must never
+		// depend on having guards in sight, or a caravan that walks away from its escort stops dead.
+		if (getIntention() == CtrlIntention.AI_INTENTION_ATTACK)
 		{
 			super.onEvtThink();
 			return;

@@ -3,6 +3,7 @@ package com.l2jfrozen.gameserver.model.actor.instance;
 import java.util.List;
 
 import com.l2jfrozen.Config;
+import com.l2jfrozen.gameserver.ai.CtrlIntention;
 import com.l2jfrozen.gameserver.ai.L2CaravanAI;
 import com.l2jfrozen.gameserver.ai.L2CharacterAI;
 import com.l2jfrozen.gameserver.datatables.CaravanCargoTable;
@@ -49,6 +50,28 @@ public class L2NpcCaravanInstance extends L2Attackable
 		super(objectId, template);
 	}
 	
+	/**
+	 * Start the AI on spawn, and clear per-life state.<BR>
+	 * <BR>
+	 * Nothing in {@link com.l2jfrozen.gameserver.model.spawn.L2Spawn} starts an NPC's AI task, and
+	 * L2AttackableAI only schedules one from changeIntention. Without asking for an intention here the
+	 * caravan's think cycle never runs and it stands still forever.<BR>
+	 * <BR>
+	 * L2Spawn reuses the same object on respawn, so cargoSpilled and the route position are reset -
+	 * otherwise a respawned caravan would carry nothing and resume mid-journey.
+	 */
+	@Override
+	public void onSpawn()
+	{
+		super.onSpawn();
+
+		cargoSpilled = false;
+		routePos = -1;
+		walkingToNextPoint = false;
+
+		getAI().setIntention(CtrlIntention.AI_INTENTION_ACTIVE);
+	}
+
 	@Override
 	public L2CharacterAI getAI()
 	{

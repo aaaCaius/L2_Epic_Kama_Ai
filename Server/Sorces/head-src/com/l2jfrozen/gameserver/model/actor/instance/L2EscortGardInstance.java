@@ -65,6 +65,10 @@ public class L2EscortGardInstance extends L2Attackable
 			homeZ = getZ();
 			homeSet = true;
 		}
+		
+		// Nothing starts an NPC's AI task on spawn - ask for an intention so changeIntention
+		// runs startAITask and the guard begins thinking. Without this it never marches.
+		getAI().setIntention(CtrlIntention.AI_INTENTION_ACTIVE);
 	}
 	
 	/**
