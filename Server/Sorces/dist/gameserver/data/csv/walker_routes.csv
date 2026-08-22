@@ -167,3 +167,12 @@
 12;32070;10;NULL;87351;-140059;-1536;5;True
 12;32070;11;NULL;89343;-140746;-1536;1;True
 12;32070;12;NULL;90605;-143167;-1536;1;True
+# route 13 - Caravan Leader (100203) test journey. Short there-and-back loop
+# between the caravan spawn and the northern waypoint, using ground already
+# proven walkable by the existing caravan/escort spawn points.
+13;100203;1;The caravan sets out.;-86212;240126;-3696;10;False
+13;100203;2;NULL;-86225;240307;-3712;3;False
+13;100203;3;NULL;-86135;240436;-3712;3;False
+13;100203;4;Goods for sale, fresh from the road!;-86342;240988;-3751;15;False
+13;100203;5;NULL;-86135;240436;-3712;3;False
+13;100203;6;NULL;-86225;240307;-3712;3;False
