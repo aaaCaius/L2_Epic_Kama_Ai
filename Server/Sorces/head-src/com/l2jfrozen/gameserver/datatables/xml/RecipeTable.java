@@ -116,6 +116,16 @@ public class RecipeTable extends RecipeController
 		}
 	}
 	
+	/**
+	 * Every recipe, so callers can index them by product. Purely additive - used by the economy engine
+	 * to work out what a town is able to manufacture from what it holds.
+	 * @return the recipe collection
+	 */
+	public java.util.Collection<Recipe> getAllRecipes()
+	{
+		return recipes.values();
+	}
+	
 	public int getRecipesCount()
 	{
 		return recipes.size();

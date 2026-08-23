@@ -60,6 +60,15 @@ public class EconomyConfig
 	 */
 	public static int DEFAULT_SETTLEMENT;
 
+	/** How many of each good a town tries to keep on its shelves. */
+	public static int SHOP_STOCK_TARGET;
+
+	/** Cap on units of any one good the town will manufacture per cycle. */
+	public static int SHOP_CRAFT_PER_CYCLE;
+
+	/** Cap on units of any one good the town will buy in from outside per cycle. */
+	public static int SHOP_IMPORT_PER_CYCLE;
+
 	public static int WAGE_PER_HEAD;
 	public static int GARRISON_COST_PER_TIER;
 
@@ -104,6 +113,9 @@ public class EconomyConfig
 
 			NPC_SITE_OUTPUT = Integer.parseInt(p.getProperty("NpcSiteOutput", "820"));
 			DEFAULT_SETTLEMENT = Integer.parseInt(p.getProperty("DefaultSettlement", "1"));
+			SHOP_STOCK_TARGET = Integer.parseInt(p.getProperty("ShopStockTarget", "40"));
+			SHOP_CRAFT_PER_CYCLE = Integer.parseInt(p.getProperty("ShopCraftPerCycle", "20"));
+			SHOP_IMPORT_PER_CYCLE = Integer.parseInt(p.getProperty("ShopImportPerCycle", "10"));
 
 			WAGE_PER_HEAD = Integer.parseInt(p.getProperty("WagePerHead", "12"));
 			GARRISON_COST_PER_TIER = Integer.parseInt(p.getProperty("GarrisonCostPerTier", "2000"));

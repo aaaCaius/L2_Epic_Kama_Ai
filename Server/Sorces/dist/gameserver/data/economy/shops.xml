@@ -22,4 +22,14 @@
     <item id="22"/>                      <!-- Leather Shirt -->
     <item id="23"/>                      <!-- Wooden Breastplate -->
   </shop>
+
+  <!--
+    Existing town merchants, converted. inherit="true" means the catalogue is
+    whatever this NPC already sells from merchant_buylists - nothing is
+    re-authored, only the quantity becomes real.
+  -->
+  <shop npc="30003" title="Silvia"  inherit="true"/>
+  <shop npc="30001" title="Lector"  inherit="true"/>
+  <shop npc="30002" title="Jackson" inherit="true"/>
+
 </shops>

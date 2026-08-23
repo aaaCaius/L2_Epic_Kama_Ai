@@ -9,6 +9,8 @@ import com.l2jfrozen.gameserver.datatables.sql.ItemTable;
 import com.l2jfrozen.gameserver.economy.EconomyConfig;
 import com.l2jfrozen.gameserver.economy.datatables.EconomyDataTable;
 import com.l2jfrozen.gameserver.templates.L2Item;
+import com.l2jfrozen.gameserver.templates.Recipe;
+import com.l2jfrozen.gameserver.templates.RecipeMaterial;
 
 /**
  * A settlement, and every mechanic that acts on it.<BR>
@@ -81,6 +83,7 @@ public class Settlement
 
 		produce(trades, activity);
 		runIndustry();
+		stockShops();
 		final double overall = consume(consumes, activity);
 		updateSatisfaction(consumes, overall);
 		exportSurplus(trades, activity);
@@ -168,6 +171,86 @@ public class Settlement
 		}
 
 		return made;
+	}
+
+	/**
+	 * Keep the shops supplied: make what the town can, buy in what it cannot.<BR>
+	 * <BR>
+	 * This is what lets an ordinary merchant become finite without its shelves simply going bare. Goods
+	 * the town can manufacture cost only materials; everything else is imported at full price out of the
+	 * treasury. So local industry is cheap and imports are a drain - which is the pressure that makes
+	 * producing your own worth doing, and which quietly empties a badly-run town's shops first.
+	 * @return how many units reached the shelves
+	 */
+	public int stockShops()
+	{
+		final EconomyDataTable data = EconomyDataTable.getInstance();
+		int stocked = 0;
+
+		for (final Integer boxed : data.getShopItems())
+		{
+			final int itemId = boxed.intValue();
+			final int target = EconomyConfig.SHOP_STOCK_TARGET;
+
+			if (getStock(itemId) >= target)
+			{
+				continue;
+			}
+
+			// 1. Manufacture, if the town knows how and holds the materials.
+			final Recipe recipe = data.getRecipeFor(itemId);
+
+			if (recipe != null && recipe.getProductItemCount() > 0)
+			{
+				int runs = (target - getStock(itemId)) / recipe.getProductItemCount();
+				runs = Math.min(runs, EconomyConfig.SHOP_CRAFT_PER_CYCLE / Math.max(1, recipe.getProductItemCount()));
+
+				for (final RecipeMaterial m : recipe.getMaterials())
+				{
+					runs = Math.min(runs, getStock(m.getItemId()) / Math.max(1, m.getQuantity()));
+				}
+
+				if (runs > 0)
+				{
+					for (final RecipeMaterial m : recipe.getMaterials())
+					{
+						removeStock(m.getItemId(), m.getQuantity() * runs);
+					}
+
+					final int made = recipe.getProductItemCount() * runs;
+					addStock(itemId, made);
+					stocked += made;
+				}
+			}
+
+			// 2. Import the rest, if the treasury can stand it.
+			final int shortfall = target - getStock(itemId);
+
+			if (shortfall <= 0)
+			{
+				continue;
+			}
+
+			final int price = referencePrice(itemId);
+			final long spare = treasury - EconomyConfig.TREASURY_RESERVE;
+
+			if (spare <= 0)
+			{
+				continue;
+			}
+
+			final int afford = (int) Math.min(spare / Math.max(1, price), EconomyConfig.SHOP_IMPORT_PER_CYCLE);
+			final int buy = Math.min(shortfall, afford);
+
+			if (buy > 0)
+			{
+				addStock(itemId, buy);
+				treasury -= (long) buy * price;
+				stocked += buy;
+			}
+		}
+
+		return stocked;
 	}
 
 	/** Draw down the stockpile, and report how well each need was met. */

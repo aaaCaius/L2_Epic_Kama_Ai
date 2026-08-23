@@ -15,9 +15,18 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.l2jfrozen.gameserver.controllers.TradeController;
+import com.l2jfrozen.gameserver.datatables.xml.RecipeTable;
 import com.l2jfrozen.gameserver.economy.model.CraftDef;
 import com.l2jfrozen.gameserver.economy.model.NeedDef;
 import com.l2jfrozen.gameserver.economy.model.ShopDef;
+import com.l2jfrozen.gameserver.model.L2TradeList;
+import com.l2jfrozen.gameserver.model.actor.instance.L2ItemInstance;
+import com.l2jfrozen.gameserver.templates.Recipe;
 
 /**
  * Loads <code>data/economy/economy.xml</code>: the needs, the items that satisfy them, and the tier
@@ -50,6 +59,12 @@ public class EconomyDataTable
 	/** What the town converts raw materials into, in tier order. */
 	private final List<CraftDef> crafts = new ArrayList<>();
 
+	/** Every item any economy shop sells - what the town must keep on its shelves. */
+	private final Set<Integer> shopItems = new HashSet<>();
+
+	/** productItemId -> a recipe that makes it, so the town can manufacture what it sells. */
+	private final Map<Integer, Recipe> recipeByProduct = new HashMap<>();
+
 	public static EconomyDataTable getInstance()
 	{
 		if (instance == null)
@@ -73,6 +88,8 @@ public class EconomyDataTable
 		itemToNeed.clear();
 		shops.clear();
 		crafts.clear();
+		shopItems.clear();
+		recipeByProduct.clear();
 		load();
 	}
 
@@ -148,9 +165,11 @@ public class EconomyDataTable
 
 			loadShops();
 			loadIndustry();
+			indexRecipes();
 
 			LOGGER.info("EconomyDataTable: loaded " + needs.size() + " needs over " + itemToNeed.size() + " items, "
-				+ tierNames.size() + " tiers, " + shops.size() + " shop(s), " + crafts.size() + " craft(s).");
+				+ tierNames.size() + " tiers, " + shops.size() + " shop(s) selling " + shopItems.size() + " item(s), "
+				+ crafts.size() + " craft(s), " + recipeByProduct.size() + " recipe-made good(s).");
 		}
 		catch (final Exception e)
 		{
@@ -182,6 +201,15 @@ public class EconomyDataTable
 				final Node title = attr.getNamedItem("title");
 
 				final ShopDef shop = new ShopDef(npcId, title == null ? "Shop" : title.getNodeValue());
+				final Node inherit = attr.getNamedItem("inherit");
+
+				// inherit="true" takes the catalogue from the shop this NPC already runs. That is the
+				// point: an existing merchant keeps selling exactly what it always sold, and only the
+				// quantity becomes real. No catalogue anywhere needs re-authoring.
+				if (inherit != null && Boolean.parseBoolean(inherit.getNodeValue()))
+				{
+					inheritCatalogue(shop, npcId);
+				}
 
 				for (Node child = node.getFirstChild(); child != null; child = child.getNextSibling())
 				{
@@ -196,6 +224,7 @@ public class EconomyDataTable
 						ess != null && Boolean.parseBoolean(ess.getNodeValue()));
 				}
 
+				shopItems.addAll(shop.getItemIds());
 				shops.put(Integer.valueOf(npcId), shop);
 			}
 		}
@@ -256,6 +285,94 @@ public class EconomyDataTable
 		{
 			LOGGER.error("EconomyDataTable: failed to parse " + INDUSTRY, e);
 		}
+	}
+
+	/** Pull an NPC's existing SQL buylist in as its economy catalogue. */
+	private static void inheritCatalogue(final ShopDef shop, final int npcId)
+	{
+		try
+		{
+			final List<L2TradeList> lists = TradeController.getInstance().getBuyListByNpcId(npcId);
+
+			if (lists == null)
+			{
+				return;
+			}
+
+			for (final L2TradeList list : lists)
+			{
+				for (final L2ItemInstance item : list.getItems())
+				{
+					shop.add(item.getItemId(), false);
+				}
+			}
+		}
+		catch (final Exception e)
+		{
+			LOGGER.warn("EconomyDataTable: could not inherit the catalogue for npc " + npcId, e);
+		}
+	}
+
+	/**
+	 * Index the datapack's recipes by what they produce.<BR>
+	 * <BR>
+	 * This is where a town's ability to manufacture comes from. There are already 870 recipes defining
+	 * materials to finished goods, so nothing needs authoring per item - if the town holds the materials
+	 * and the shop sells the product, the town can make it.
+	 */
+	private void indexRecipes()
+	{
+		try
+		{
+			final Collection<Recipe> all = RecipeTable.getInstance().getAllRecipes();
+
+			if (all == null)
+			{
+				return;
+			}
+
+			for (final Recipe r : all)
+			{
+				if (r == null || r.getProductItemId() <= 0 || r.getMaterials() == null || r.getMaterials().isEmpty())
+				{
+					continue;
+				}
+
+				// Only index what a shop actually sells - the rest is noise the town never needs.
+				if (!shopItems.contains(Integer.valueOf(r.getProductItemId())))
+				{
+					continue;
+				}
+
+				final Recipe existing = recipeByProduct.get(Integer.valueOf(r.getProductItemId()));
+
+				// Prefer the simplest recipe: fewest distinct materials, then lowest level.
+				if (existing == null
+					|| r.getMaterials().size() < existing.getMaterials().size()
+					|| (r.getMaterials().size() == existing.getMaterials().size() && r.getLevel() < existing.getLevel()))
+				{
+					recipeByProduct.put(Integer.valueOf(r.getProductItemId()), r);
+				}
+			}
+		}
+		catch (final Exception e)
+		{
+			LOGGER.warn("EconomyDataTable: could not index recipes", e);
+		}
+	}
+
+	public Set<Integer> getShopItems()
+	{
+		return shopItems;
+	}
+
+	/**
+	 * @param  itemId a good a shop sells
+	 * @return        a recipe the town can use to make it, or null if it must be imported instead
+	 */
+	public Recipe getRecipeFor(final int itemId)
+	{
+		return recipeByProduct.get(Integer.valueOf(itemId));
 	}
 
 	public ShopDef getShop(final int npcId)
