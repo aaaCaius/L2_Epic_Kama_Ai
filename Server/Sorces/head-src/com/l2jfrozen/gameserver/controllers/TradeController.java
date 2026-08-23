@@ -487,6 +487,19 @@ public class TradeController
 		return listsTaskItem.get(listId);
 	}
 	
+	/**
+	 * Publish a list built at runtime rather than loaded from SQL - the economy engine's shops.<BR>
+	 * Purely additive: nothing already in the map is touched and the SQL load path is unchanged.
+	 * @param list the list to publish
+	 */
+	public void registerBuyList(final L2TradeList list)
+	{
+		if (list != null)
+		{
+			tradeLists.put(Integer.valueOf(list.getListId()), list);
+		}
+	}
+	
 	public List<L2TradeList> getBuyListByNpcId(final int npcId)
 	{
 		final List<L2TradeList> lists = new ArrayList<>();

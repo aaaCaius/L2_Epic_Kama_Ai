@@ -307,9 +307,56 @@ public final class RequestBuyItem extends L2GameClientPacket
 			return;
 		}
 		
+		// Reserve the goods BEFORE taking any money.
+		//
+		// The original order charged the player first and only then checked stock, so a shop that ran
+		// out between the window opening and the purchase took the adena and handed back nothing. That
+		// was rare while almost no shop was finite; with the economy engine every shelf is finite, so
+		// it would happen daily. Anything reserved here is returned if the charge fails.
+		final java.util.List<int[]> reserved = new java.util.ArrayList<>();
+		
+		for (int i = 0; i < count; i++)
+		{
+			final int itemId = items[i * 2 + 0];
+			final int qty = Math.max(0, items[i * 2 + 1]);
+			
+			if (!list.containsItemId(itemId))
+			{
+				Util.handleIllegalPlayerAction(player, "Warning!! Character " + player.getName() + " of account " + player.getAccountName() + " sent a false BuyList list_id.", Config.DEFAULT_PUNISH);
+				return;
+			}
+			
+			if (!list.countDecrease(itemId))
+			{
+				continue;
+			}
+			
+			if (!list.decreaseCount(itemId, qty))
+			{
+				for (final int[] back : reserved)
+				{
+					list.increaseCount(back[0], back[1]);
+				}
+				
+				sendPacket(new SystemMessage(SystemMessageId.YOU_HAVE_EXCEEDED_QUANTITY_THAT_CAN_BE_INPUTTED));
+				return;
+			}
+			
+			reserved.add(new int[]
+			{
+				itemId,
+				qty
+			});
+		}
+		
 		// Charge buyer and add tax to castle treasury if not owned by npc clan
 		if (subTotal < 0 || !player.reduceAdena("Buy", (int) (subTotal + tax), player.getLastFolkNPC(), false))
 		{
+			for (final int[] back : reserved)
+			{
+				list.increaseCount(back[0], back[1]);
+			}
+			
 			sendPacket(new SystemMessage(SystemMessageId.YOU_NOT_ENOUGH_ADENA));
 			return;
 		}
@@ -330,23 +377,7 @@ public final class RequestBuyItem extends L2GameClientPacket
 				count = 0;
 			}
 			
-			if (!list.containsItemId(itemId))
-			{
-				Util.handleIllegalPlayerAction(player, "Warning!! Character " + player.getName() + " of account " + player.getAccountName() + " sent a false BuyList list_id.", Config.DEFAULT_PUNISH);
-				return;
-			}
-			
-			if (list.countDecrease(itemId))
-			{
-				if (!list.decreaseCount(itemId, count))
-				{
-					SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_EXCEEDED_QUANTITY_THAT_CAN_BE_INPUTTED);
-					sendPacket(sm);
-					sm = null;
-					return;
-				}
-				
-			}
+			// Stock was already reserved above, before the player was charged.
 			// Add item to Inventory and adjust update packet
 			player.getInventory().addItem("Buy", itemId, count, player, merchant);
 			/*

@@ -29,6 +29,10 @@ import com.l2jfrozen.gameserver.communitybbs.Manager.ForumsBBSManager;
 import com.l2jfrozen.gameserver.controllers.GameTimeController;
 import com.l2jfrozen.gameserver.controllers.RecipeController;
 import com.l2jfrozen.gameserver.controllers.TradeController;
+import com.l2jfrozen.gameserver.economy.EconomyConfig;
+import com.l2jfrozen.gameserver.economy.datatables.EconomyDataTable;
+import com.l2jfrozen.gameserver.economy.managers.EconomyTickManager;
+import com.l2jfrozen.gameserver.economy.managers.SettlementManager;
 import com.l2jfrozen.gameserver.datatables.GmListTable;
 import com.l2jfrozen.gameserver.datatables.HeroSkillTable;
 import com.l2jfrozen.gameserver.datatables.NobleSkillTable;
@@ -299,6 +303,13 @@ public class GameServer
 		
 		Util.printSection("Economy");
 		TradeController.getInstance();
+		EconomyConfig.load();
+		if (EconomyConfig.ENABLED)
+		{
+			EconomyDataTable.getInstance();
+			SettlementManager.getInstance();
+			EconomyTickManager.getInstance();
+		}
 		L2Multisell.getInstance();
 		
 		Util.printSection("Clan Halls");

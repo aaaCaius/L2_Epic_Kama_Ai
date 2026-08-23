@@ -53,6 +53,7 @@ import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminPForge;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminPetition;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminPledge;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminPolymorph;
+import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminEconomy;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminReload;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminRepairChar;
 import com.l2jfrozen.gameserver.handler.admincommandhandlers.AdminRes;
@@ -95,6 +96,7 @@ public class AdminCommandHandler
 		registerAdminCommandHandler(new AdminAnnouncements());
 		registerAdminCommandHandler(new AdminBBS());
 		registerAdminCommandHandler(new AdminBan());
+		registerAdminCommandHandler(new AdminEconomy());
 		registerAdminCommandHandler(new AdminBoat());
 		registerAdminCommandHandler(new AdminBuffs());
 		registerAdminCommandHandler(new AdminCache());

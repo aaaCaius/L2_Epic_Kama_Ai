@@ -6,6 +6,8 @@ import com.l2jfrozen.Config;
 import com.l2jfrozen.gameserver.cache.HtmCache;
 import com.l2jfrozen.gameserver.controllers.TradeController;
 import com.l2jfrozen.gameserver.datatables.SkillTable;
+import com.l2jfrozen.gameserver.economy.EconomyConfig;
+import com.l2jfrozen.gameserver.economy.datatables.EconomyDataTable;
 import com.l2jfrozen.gameserver.datatables.csv.NpcWalkerRoutesTable;
 import com.l2jfrozen.gameserver.datatables.sql.ItemTable;
 import com.l2jfrozen.gameserver.datatables.sql.NpcTable;
@@ -43,7 +45,14 @@ public class AdminReload implements IAdminCommandHandler
 			{
 				final String type = st.nextToken();
 				
-				if (type.equals("multisell"))
+				if (type.startsWith("economy"))
+				{
+					EconomyConfig.load();
+					EconomyDataTable.getInstance().reload();
+					sendReloadPage(activeChar);
+					activeChar.sendMessage("Economy config and data reloaded.");
+				}
+				else if (type.equals("multisell"))
 				{
 					L2Multisell.getInstance().reload();
 					sendReloadPage(activeChar);

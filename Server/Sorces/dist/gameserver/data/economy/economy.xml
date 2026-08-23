@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Living Aden - needs, the items that satisfy them, and the tier ladder.
+
+  Every id below is an item that already exists in Interlude, so this file
+  needs no client patch. Food and drink are thin because Interlude has almost
+  no such items - see the concept document on minting wine, tobacco and
+  provisions as real items later.
+
+  rate  = units consumed per citizen per cycle
+  weight= how heavily this need counts toward overall fulfilment
+  unlock= the tier at which the town begins to need it
+-->
+<economy>
+
+  <needs>
+    <need id="food" unlock="1" weight="3" rate="1.0">
+      <item id="1037" name="Fruit of The Mother Tree"/>
+      <item id="1441" name="Meat of Monster Eye"/>
+      <item id="2775" name="Enchanted Eye Meat"/>
+    </need>
+
+    <need id="water" unlock="1" weight="3" rate="1.0">
+      <item id="1764" name="Deep Sea Water"/>
+    </need>
+
+    <need id="clothing" unlock="2" weight="2" rate="0.35">
+      <item id="1868" name="Thread"/>
+      <item id="1866" name="Suede"/>
+      <item id="1882" name="Leather"/>
+      <item id="1867" name="Animal Skin"/>
+      <item id="1884" name="Cord"/>
+    </need>
+
+    <need id="medicine" unlock="3" weight="2" rate="0.25">
+      <item id="1060" name="Lesser Healing Potion"/>
+      <item id="1061" name="Healing Potion"/>
+      <item id="1831" name="Antidote"/>
+      <item id="1833" name="Bandage"/>
+    </need>
+
+    <need id="weapons" unlock="3" weight="2" rate="0.25">
+      <item id="1869" name="Iron Ore"/>
+      <item id="1870" name="Coal"/>
+      <item id="1880" name="Steel"/>
+      <item id="1864" name="Stem"/>
+    </need>
+
+    <need id="luxury" unlock="4" weight="1" rate="0.5">
+      <item id="1090" name="Dreviant Wine"/>
+      <item id="1561" name="Elven Wine"/>
+      <item id="1873" name="Silver Nugget"/>
+    </need>
+
+    <need id="entertainment" unlock="5" weight="1" rate="0.3">
+      <item id="1875" name="Stone of Purity"/>
+      <item id="1874" name="Oriharukon Ore"/>
+    </need>
+  </needs>
+
+  <!--
+    What each tier opens. Services are named here and read by the tier gate;
+    wiring individual NPCs to them is the next package.
+  -->
+  <tiers>
+    <tier level="1" name="Outpost"     services="grocer,smith"/>
+    <tier level="2" name="Village"     services="grocer,smith,petshop,trainer_basic"/>
+    <tier level="3" name="Town"        services="grocer,smith,petshop,trainer_basic,trainer_master,scholar,stable,garrison"/>
+    <tier level="4" name="City"        services="grocer,smith,petshop,trainer_basic,trainer_master,scholar,stable,garrison,enchanter,priest,scholar_master,mounts"/>
+    <tier level="5" name="Metropolis"  services="grocer,smith,petshop,trainer_basic,trainer_master,scholar,stable,garrison,enchanter,priest,scholar_master,mounts,wyvern,rentals"/>
+  </tiers>
+
+</economy>

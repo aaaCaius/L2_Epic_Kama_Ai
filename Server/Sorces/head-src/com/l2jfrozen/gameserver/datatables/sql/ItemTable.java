@@ -490,6 +490,9 @@ public class ItemTable
 			case "recipe":
 				item.type = L2EtcItemType.RECEIPE;
 				break;
+			case "material":
+				item.type = L2EtcItemType.MATERIAL;
+				break;
 			case "scroll":
 				item.type = L2EtcItemType.SCROLL;
 				break;

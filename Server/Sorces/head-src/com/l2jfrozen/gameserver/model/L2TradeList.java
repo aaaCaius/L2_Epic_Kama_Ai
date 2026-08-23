@@ -95,6 +95,30 @@ public class L2TradeList
 		return true;
 	}
 	
+	/**
+	 * Put stock back after a purchase failed part-way through. The counterpart to
+	 * {@link #decreaseCount}, so a charge that fails cannot leave goods destroyed.
+	 * @param itemID the item to restore
+	 * @param count  how many
+	 */
+	public synchronized void increaseCount(final int itemID, final int count)
+	{
+		if (count <= 0)
+		{
+			return;
+		}
+		
+		for (int i = 0; i < items.size(); i++)
+		{
+			final L2ItemInstance item = items.get(i);
+			
+			if (item.getItemId() == itemID)
+			{
+				item.setCount(item.getCount() + count);
+			}
+		}
+	}
+	
 	public void restoreCount(final int time)
 	{
 		for (int i = 0; i < items.size(); i++)
