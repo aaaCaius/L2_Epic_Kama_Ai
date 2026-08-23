@@ -15,7 +15,9 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.l2jfrozen.gameserver.economy.model.CraftDef;
 import com.l2jfrozen.gameserver.economy.model.NeedDef;
+import com.l2jfrozen.gameserver.economy.model.ShopDef;
 
 /**
  * Loads <code>data/economy/economy.xml</code>: the needs, the items that satisfy them, and the tier
@@ -30,6 +32,8 @@ public class EconomyDataTable
 	private static final Logger LOGGER = Logger.getLogger(EconomyDataTable.class);
 
 	private static final String FILE = "data/economy/economy.xml";
+	private static final String SHOPS = "data/economy/shops.xml";
+	private static final String INDUSTRY = "data/economy/industry.xml";
 
 	private static EconomyDataTable instance;
 
@@ -39,6 +43,12 @@ public class EconomyDataTable
 
 	/** itemId -> the need it serves, built once so lookups on the trade path are cheap. */
 	private final Map<Integer, NeedDef> itemToNeed = new HashMap<>();
+
+	/** npcId -> its catalogue. */
+	private final Map<Integer, ShopDef> shops = new HashMap<>();
+
+	/** What the town converts raw materials into, in tier order. */
+	private final List<CraftDef> crafts = new ArrayList<>();
 
 	public static EconomyDataTable getInstance()
 	{
@@ -61,6 +71,8 @@ public class EconomyDataTable
 		tierNames.clear();
 		tierServices.clear();
 		itemToNeed.clear();
+		shops.clear();
+		crafts.clear();
 		load();
 	}
 
@@ -134,12 +146,137 @@ public class EconomyDataTable
 				tierServices.put(Integer.valueOf(level), services);
 			}
 
-			LOGGER.info("EconomyDataTable: loaded " + needs.size() + " needs over " + itemToNeed.size() + " items, " + tierNames.size() + " tiers.");
+			loadShops();
+			loadIndustry();
+
+			LOGGER.info("EconomyDataTable: loaded " + needs.size() + " needs over " + itemToNeed.size() + " items, "
+				+ tierNames.size() + " tiers, " + shops.size() + " shop(s), " + crafts.size() + " craft(s).");
 		}
 		catch (final Exception e)
 		{
 			LOGGER.error("EconomyDataTable: failed to parse " + FILE, e);
 		}
+	}
+
+	private void loadShops()
+	{
+		final File file = new File(SHOPS);
+
+		if (!file.exists())
+		{
+			return;
+		}
+
+		try
+		{
+			final Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file);
+			doc.getDocumentElement().normalize();
+
+			final NodeList list = doc.getElementsByTagName("shop");
+
+			for (int i = 0; i < list.getLength(); i++)
+			{
+				final Node node = list.item(i);
+				final NamedNodeMap attr = node.getAttributes();
+				final int npcId = Integer.parseInt(attr.getNamedItem("npc").getNodeValue());
+				final Node title = attr.getNamedItem("title");
+
+				final ShopDef shop = new ShopDef(npcId, title == null ? "Shop" : title.getNodeValue());
+
+				for (Node child = node.getFirstChild(); child != null; child = child.getNextSibling())
+				{
+					if (!"item".equals(child.getNodeName()))
+					{
+						continue;
+					}
+
+					final NamedNodeMap ia = child.getAttributes();
+					final Node ess = ia.getNamedItem("essential");
+					shop.add(Integer.parseInt(ia.getNamedItem("id").getNodeValue()),
+						ess != null && Boolean.parseBoolean(ess.getNodeValue()));
+				}
+
+				shops.put(Integer.valueOf(npcId), shop);
+			}
+		}
+		catch (final Exception e)
+		{
+			LOGGER.error("EconomyDataTable: failed to parse " + SHOPS, e);
+		}
+	}
+
+	private void loadIndustry()
+	{
+		final File file = new File(INDUSTRY);
+
+		if (!file.exists())
+		{
+			return;
+		}
+
+		try
+		{
+			final Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file);
+			doc.getDocumentElement().normalize();
+
+			final NodeList list = doc.getElementsByTagName("craft");
+
+			for (int i = 0; i < list.getLength(); i++)
+			{
+				final Node node = list.item(i);
+				final NamedNodeMap attr = node.getAttributes();
+
+				final CraftDef craft = new CraftDef(attr.getNamedItem("id").getNodeValue(),
+					Integer.parseInt(attr.getNamedItem("tier").getNodeValue()),
+					Integer.parseInt(attr.getNamedItem("capacity").getNodeValue()));
+
+				for (Node child = node.getFirstChild(); child != null; child = child.getNextSibling())
+				{
+					final NamedNodeMap ca = child.getAttributes();
+
+					if ("input".equals(child.getNodeName()))
+					{
+						craft.addInput(Integer.parseInt(ca.getNamedItem("id").getNodeValue()),
+							Integer.parseInt(ca.getNamedItem("count").getNodeValue()));
+					}
+					else if ("output".equals(child.getNodeName()))
+					{
+						craft.setOutput(Integer.parseInt(ca.getNamedItem("id").getNodeValue()),
+							Integer.parseInt(ca.getNamedItem("count").getNodeValue()));
+					}
+				}
+
+				if (craft.getOutput() != null)
+				{
+					crafts.add(craft);
+				}
+			}
+		}
+		catch (final Exception e)
+		{
+			LOGGER.error("EconomyDataTable: failed to parse " + INDUSTRY, e);
+		}
+	}
+
+	public ShopDef getShop(final int npcId)
+	{
+		return shops.get(Integer.valueOf(npcId));
+	}
+
+	/** @return the conversions a town at this tier can run */
+	public List<CraftDef> getCraftsUpTo(final int tier)
+	{
+		final List<CraftDef> out = new ArrayList<>();
+
+		for (final CraftDef c : crafts)
+		{
+			if (c.getTier() <= tier)
+			{
+				out.add(c);
+			}
+		}
+
+		return out;
 	}
 
 	public List<NeedDef> getNeeds()

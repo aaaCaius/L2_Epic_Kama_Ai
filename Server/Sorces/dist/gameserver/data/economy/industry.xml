@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Town industry - the missing middle of the chain.
+
+  A town does not need iron ore; it needs swords. These are the conversions the
+  town runs itself each cycle, turning stockpiled raw materials into the goods
+  its shops sell. This is what makes stock appear on a shelf: a shop is empty
+  because the town has not made any, not because a timer has not elapsed.
+
+  tier     the settlement tier at which the town can run this at all
+  capacity outputs per cycle at full productivity, before the satisfaction
+           multiplier - so a contented town genuinely makes more
+-->
+<industry>
+
+  <craft id="soulshot" tier="1" capacity="400">
+    <input id="1869" count="1"/>          <!-- Iron Ore -->
+    <output id="1835" count="10"/>        <!-- Soulshot: No Grade -->
+  </craft>
+
+  <craft id="spiritshot" tier="1" capacity="400">
+    <input id="1864" count="1"/>          <!-- Stem -->
+    <output id="2509" count="10"/>        <!-- Spiritshot: No Grade -->
+  </craft>
+
+  <craft id="potion_lesser" tier="1" capacity="120">
+    <input id="1864" count="2"/>          <!-- Stem -->
+    <output id="1060" count="5"/>         <!-- Lesser Healing Potion -->
+  </craft>
+
+  <craft id="arrow_wood" tier="1" capacity="600">
+    <input id="1864" count="1"/>          <!-- Stem -->
+    <output id="17" count="40"/>          <!-- Wooden Arrow -->
+  </craft>
+
+  <craft id="potion_healing" tier="3" capacity="60">
+    <input id="1864" count="3"/>          <!-- Stem -->
+    <input id="1875" count="1"/>          <!-- Stone of Purity -->
+    <output id="1061" count="4"/>         <!-- Healing Potion -->
+  </craft>
+
+  <craft id="arrow_bone" tier="3" capacity="300">
+    <input id="1872" count="1"/>          <!-- Animal Bone -->
+    <output id="1341" count="30"/>        <!-- Bone Arrow -->
+  </craft>
+
+  <craft id="blade_falchion" tier="2" capacity="4">
+    <input id="1869" count="20"/>         <!-- Iron Ore -->
+    <input id="1880" count="4"/>          <!-- Steel -->
+    <output id="68" count="1"/>           <!-- Falchion -->
+  </craft>
+
+  <craft id="blade_revolution" tier="3" capacity="2">
+    <input id="1869" count="35"/>         <!-- Iron Ore -->
+    <input id="1880" count="10"/>         <!-- Steel -->
+    <output id="129" count="1"/>          <!-- Sword of Revolution -->
+  </craft>
+
+  <craft id="armour_leather" tier="2" capacity="6">
+    <input id="1882" count="12"/>         <!-- Leather -->
+    <input id="1868" count="6"/>          <!-- Thread -->
+    <output id="22" count="1"/>           <!-- Leather Shirt -->
+  </craft>
+
+  <craft id="armour_wood" tier="2" capacity="6">
+    <input id="1864" count="15"/>         <!-- Stem -->
+    <input id="1868" count="4"/>          <!-- Thread -->
+    <output id="23" count="1"/>           <!-- Wooden Breastplate -->
+  </craft>
+
+</industry>

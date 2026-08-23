@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Economy shops: what a town shop may sell. HOW MUCH it sells is the town's
+  actual stockpile, not a number written here.
+
+  essential="true" marks goods a player cannot be blocked from buying. The line
+  never disappears; if the town has run out it imports the shortfall at cost,
+  which drains the treasury. Scarcity still hurts - it just hurts the town
+  rather than stranding the player. See the concept document: never block
+  progression.
+-->
+<shops>
+  <shop npc="100206" title="Town Factor">
+    <item id="1835" essential="true"/>   <!-- Soulshot: No Grade -->
+    <item id="2509" essential="true"/>   <!-- Spiritshot: No Grade -->
+    <item id="1060" essential="true"/>   <!-- Lesser Healing Potion -->
+    <item id="17"/>                      <!-- Wooden Arrow -->
+    <item id="1341"/>                    <!-- Bone Arrow -->
+    <item id="1061"/>                    <!-- Healing Potion -->
+    <item id="68"/>                      <!-- Falchion -->
+    <item id="129"/>                     <!-- Sword of Revolution -->
+    <item id="22"/>                      <!-- Leather Shirt -->
+    <item id="23"/>                      <!-- Wooden Breastplate -->
+  </shop>
+</shops>

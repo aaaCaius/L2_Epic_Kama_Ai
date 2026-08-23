@@ -52,7 +52,7 @@ public class L2EcoMerchantInstance extends L2MerchantInstance
 	{
 		if (list == null)
 		{
-			list = new EcoTradeList(LIST_ID_BASE + getNpcId(), s.getId());
+			list = new EcoTradeList(LIST_ID_BASE + getNpcId(), s.getId(), getNpcId());
 			list.setNpcId(String.valueOf(getNpcId()));
 			TradeController.getInstance().registerBuyList(list);
 		}

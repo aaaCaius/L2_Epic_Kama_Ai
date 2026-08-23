@@ -80,6 +80,7 @@ public class Settlement
 		}
 
 		produce(trades, activity);
+		runIndustry();
 		final double overall = consume(consumes, activity);
 		updateSatisfaction(consumes, overall);
 		exportSurplus(trades, activity);
@@ -120,6 +121,53 @@ public class Settlement
 				addStock(n.getItemIds().get(0).intValue(), share);
 			}
 		}
+	}
+
+	/**
+	 * Turn raw materials into the goods the shops sell.<BR>
+	 * <BR>
+	 * Without this step a town accumulates ore and thread forever while its shelves stay bare, because
+	 * nothing connects what the settlement holds to what a player wants to buy. A shop being empty
+	 * should mean the town has not made any - not that a restock timer has not elapsed.
+	 * @return how many finished goods were produced
+	 */
+	public int runIndustry()
+	{
+		int made = 0;
+
+		for (final CraftDef craft : EconomyDataTable.getInstance().getCraftsUpTo(tier))
+		{
+			final CraftDef.Part out = craft.getOutput();
+
+			if (out == null || out.count <= 0)
+			{
+				continue;
+			}
+
+			// A contented town genuinely produces more.
+			int runs = (int) (craft.getCapacity() * outputMultiplier() / out.count);
+
+			// Bounded by whichever input runs out first.
+			for (final CraftDef.Part in : craft.getInputs())
+			{
+				runs = Math.min(runs, getStock(in.itemId) / Math.max(1, in.count));
+			}
+
+			if (runs <= 0)
+			{
+				continue;
+			}
+
+			for (final CraftDef.Part in : craft.getInputs())
+			{
+				removeStock(in.itemId, in.count * runs);
+			}
+
+			addStock(out.itemId, out.count * runs);
+			made += out.count * runs;
+		}
+
+		return made;
 	}
 
 	/** Draw down the stockpile, and report how well each need was met. */
