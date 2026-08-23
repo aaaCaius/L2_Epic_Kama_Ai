@@ -42,6 +42,8 @@ public class SettlementManager
 
 	private final Map<Integer, Settlement> settlements = new HashMap<>();
 
+	private boolean warnedFallback;
+
 	public static SettlementManager getInstance()
 	{
 		if (instance == null)
@@ -174,14 +176,39 @@ public class SettlementManager
 			return null;
 		}
 
+		Settlement found = null;
+
 		try
 		{
-			return get(MapRegionTable.getInstance().getAreaCastle(character));
+			found = get(MapRegionTable.getInstance().getAreaCastle(character));
 		}
 		catch (final Exception e)
 		{
-			return null;
+			found = null;
 		}
+
+		if (found != null)
+		{
+			return found;
+		}
+
+		// Only the Gludio domain has a settlement today, so anything spawned elsewhere would resolve
+		// to nothing and appear broken. Fall back rather than fail silently.
+		if (EconomyConfig.DEFAULT_SETTLEMENT > 0)
+		{
+			final Settlement fallback = get(EconomyConfig.DEFAULT_SETTLEMENT);
+
+			if (fallback != null && !warnedFallback)
+			{
+				warnedFallback = true;
+				LOGGER.info("SettlementManager: no settlement for this region - falling back to "
+					+ fallback.getName() + ". Set DefaultSettlement=0 once every region has one.");
+			}
+
+			return fallback;
+		}
+
+		return null;
 	}
 
 	public Collection<Settlement> getAll()

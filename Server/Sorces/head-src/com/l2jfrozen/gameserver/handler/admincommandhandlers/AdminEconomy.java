@@ -57,6 +57,29 @@ public class AdminEconomy implements IAdminCommandHandler
 			return true;
 		}
 
+		if ("here".equals(arg))
+		{
+			// Says exactly which settlement governs where you stand, which is the first thing to check
+			// when an economy NPC appears to do nothing.
+			int castle = -1;
+
+			try
+			{
+				castle = com.l2jfrozen.gameserver.datatables.csv.MapRegionTable.getInstance().getAreaCastle(activeChar);
+			}
+			catch (final Exception e)
+			{
+				castle = -1;
+			}
+
+			final Settlement s = SettlementManager.getInstance().getByLocation(activeChar);
+			activeChar.sendMessage("Region maps to castle " + castle + ".");
+			activeChar.sendMessage(s == null
+				? "No settlement governs this spot, and no fallback is set."
+				: "Governed by: " + s.getName() + " (" + s.getId() + "), tier " + s.getTier() + ".");
+			return true;
+		}
+
 		if ("snapshot".equals(arg))
 		{
 			for (final Settlement s : SettlementManager.getInstance().getAll())
@@ -84,7 +107,7 @@ public class AdminEconomy implements IAdminCommandHandler
 		}
 		catch (final NumberFormatException e)
 		{
-			activeChar.sendMessage("Usage: //eco [id | set | stock | cycle | snapshot]");
+			activeChar.sendMessage("Usage: //eco [id | here | set | stock | cycle | snapshot]");
 		}
 
 		return true;

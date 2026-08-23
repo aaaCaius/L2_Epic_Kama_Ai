@@ -53,6 +53,13 @@ public class EconomyConfig
 
 	public static int NPC_SITE_OUTPUT;
 
+	/**
+	 * Settlement used when a location maps to a region that has none of its own. While only one
+	 * settlement exists, this is what lets an economy NPC work anywhere rather than silently doing
+	 * nothing outside the Gludio domain. 0 disables the fallback.
+	 */
+	public static int DEFAULT_SETTLEMENT;
+
 	public static int WAGE_PER_HEAD;
 	public static int GARRISON_COST_PER_TIER;
 
@@ -96,6 +103,7 @@ public class EconomyConfig
 			EXPORT_BUFFER = Double.parseDouble(p.getProperty("ExportBuffer", "1.8"));
 
 			NPC_SITE_OUTPUT = Integer.parseInt(p.getProperty("NpcSiteOutput", "820"));
+			DEFAULT_SETTLEMENT = Integer.parseInt(p.getProperty("DefaultSettlement", "1"));
 
 			WAGE_PER_HEAD = Integer.parseInt(p.getProperty("WagePerHead", "12"));
 			GARRISON_COST_PER_TIER = Integer.parseInt(p.getProperty("GarrisonCostPerTier", "2000"));
