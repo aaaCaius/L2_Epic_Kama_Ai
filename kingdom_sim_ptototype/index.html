@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kingdom of Gludio — prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="topbar">
+  <span class="realm">Kingdom of Gludio</span>
+  <span id="hud"></span>
+  <span class="spacer"></span>
+  <span id="speeds">
+    <button data-s="0" class="on" onclick="setSpeed(0)">Pause</button>
+    <button data-s="1" onclick="setSpeed(1)">Play</button>
+    <button data-s="2" onclick="setSpeed(2)">Fast</button>
+    <button data-s="3" onclick="setSpeed(3)">Blur</button>
+  </span>
+  <button onclick="step(1)">+1 wk</button>
+  <button onclick="step(13)">+ season</button>
+  <button onclick="step(52)">+ year</button>
+  <span class="spacer"></span>
+  <label class="stat" for="seed">seed</label>
+  <input id="seed" value="7" style="width:52px;font:inherit;font-size:13px;background:#171a20;color:#e8e3d8;border:1px solid #2f343d;border-radius:3px;padding:3px 6px;text-align:right">
+  <button onclick="reset()">Reset</button>
+  <button onclick="document.getElementById('tuner').classList.toggle('open')">Constants</button>
+</div>
+
+<div id="main">
+  <div id="nav"></div>
+  <div id="detail"></div>
+  <div id="chron"></div>
+</div>
+
+<div id="tuner"></div>
+
+<script src="sim.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>

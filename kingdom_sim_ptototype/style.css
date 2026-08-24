@@ -1,0 +1,166 @@
+/* Kingdom prototype - a design tool that happens to be playable. */
+
+:root {
+  --ink: #e8e3d8;
+  --ink-dim: #a79f8f;
+  --ink-faint: #6f685c;
+  --ground: #14161a;
+  --panel: #1c1f25;
+  --panel-2: #23272f;
+  --rule: #2f343d;
+  --gold: #c9a227;
+  --gold-dim: #8a7220;
+  --good: #6fae62;
+  --warn: #d99a3a;
+  --bad: #c9584f;
+  --accent: #6f9ec4;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 14px/1.5 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+/* ---------- top bar ---------- */
+#topbar {
+  display: flex; align-items: center; gap: 18px;
+  padding: 10px 16px;
+  background: linear-gradient(180deg, #1e222a, #171a20);
+  border-bottom: 1px solid var(--rule);
+}
+#topbar .realm { font-size: 18px; letter-spacing: .02em; color: var(--gold); }
+#topbar .stat { font-size: 13px; color: var(--ink-dim); }
+#topbar .stat b { color: var(--ink); font-weight: 600; }
+#topbar .spacer { flex: 1; }
+
+button {
+  font: inherit; font-size: 13px;
+  background: var(--panel-2); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 3px;
+  padding: 4px 11px; cursor: pointer;
+}
+button:hover { border-color: var(--gold-dim); color: #fff; }
+button.on { background: var(--gold-dim); border-color: var(--gold); color: #16181c; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---------- layout ---------- */
+#main { display: grid; grid-template-columns: 250px 1fr 330px; min-height: 0; }
+#nav, #detail, #chron { overflow-y: auto; min-height: 0; }
+#nav { border-right: 1px solid var(--rule); background: #171a20; }
+#chron { border-left: 1px solid var(--rule); background: #171a20; }
+#detail { padding: 18px 24px 60px; }
+
+h2.sec {
+  font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink-faint); margin: 16px 14px 6px; font-weight: 600;
+}
+
+/* ---------- nav ---------- */
+.navitem {
+  padding: 7px 14px; cursor: pointer; border-left: 2px solid transparent;
+  display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
+}
+.navitem:hover { background: #1d2129; }
+.navitem.sel { background: #232833; border-left-color: var(--gold); }
+.navitem .nm { color: var(--ink); }
+.navitem .sub { font-size: 11px; color: var(--ink-faint); font-family: ui-monospace, monospace; }
+
+/* ---------- detail ---------- */
+.crumb { font-size: 12px; color: var(--ink-faint); margin-bottom: 10px; }
+.crumb a { color: var(--accent); cursor: pointer; text-decoration: none; }
+.crumb a:hover { text-decoration: underline; }
+
+h1 { font-size: 26px; margin: 0 0 2px; letter-spacing: .01em; }
+.subtitle { color: var(--ink-dim); margin-bottom: 18px; font-size: 13px; }
+
+.card {
+  background: var(--panel); border: 1px solid var(--rule);
+  border-radius: 4px; padding: 14px 16px; margin-bottom: 14px;
+}
+.card h3 {
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-faint); margin: 0 0 10px; font-weight: 600;
+}
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.kv { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; border-bottom: 1px solid #23262c; }
+.kv:last-child { border-bottom: none; }
+.kv .k { color: var(--ink-dim); }
+.kv .v { font-family: ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.tile {
+  background: var(--panel-2); border: 1px solid var(--rule); border-radius: 4px;
+  padding: 11px 13px; cursor: pointer;
+}
+.tile:hover { border-color: var(--gold-dim); }
+.tile .t { font-size: 15px; }
+.tile .d { font-size: 12px; color: var(--ink-dim); margin-top: 3px; }
+.tile .m { font-family: ui-monospace, monospace; font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
+
+/* reasoning */
+.why { margin-top: 4px; }
+.whyrow {
+  display: grid; grid-template-columns: 46px 1fr; gap: 10px;
+  padding: 5px 0; border-bottom: 1px solid #23262c; align-items: baseline;
+}
+.whyrow:last-child { border-bottom: none; }
+.whyrow.win .lbl { color: var(--gold); }
+.whyrow .sc {
+  font-family: ui-monospace, monospace; font-size: 12px; text-align: right;
+  color: var(--ink-faint); font-variant-numeric: tabular-nums;
+}
+.whyrow.win .sc { color: var(--gold); }
+.whyrow .lbl { color: var(--ink); }
+.whyrow .note { color: var(--ink-faint); font-size: 12px; }
+
+/* bars */
+.bar { height: 6px; background: #2a2e36; border-radius: 3px; overflow: hidden; margin-top: 5px; }
+.bar > i { display: block; height: 100%; background: var(--good); }
+.bar.warn > i { background: var(--warn); }
+.bar.bad > i { background: var(--bad); }
+
+/* chronicle */
+.ev { padding: 7px 13px; border-bottom: 1px solid #1f232a; font-size: 13px; }
+.ev .wk { font-family: ui-monospace, monospace; font-size: 11px; color: var(--ink-faint); margin-right: 6px; }
+.ev.good { border-left: 2px solid var(--good); }
+.ev.warn { border-left: 2px solid var(--warn); }
+.ev.bad  { border-left: 2px solid var(--bad); }
+.ev.info { border-left: 2px solid #2f343d; }
+
+/* intervene */
+.levers { display: flex; flex-wrap: wrap; gap: 8px; }
+.levers select, .levers input {
+  font: inherit; font-size: 13px; background: #171a20; color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 3px; padding: 4px 7px;
+}
+.hint { font-size: 12px; color: var(--ink-faint); margin-top: 8px; }
+
+/* tuning drawer */
+#tuner {
+  position: fixed; right: 0; bottom: 0; width: 330px; max-height: 62vh; overflow-y: auto;
+  background: #10131a; border: 1px solid var(--rule); border-right: none; border-bottom: none;
+  padding: 12px 14px; display: none; z-index: 20;
+}
+#tuner.open { display: block; }
+#tuner .row { display: grid; grid-template-columns: 1fr 62px; gap: 8px; align-items: center; padding: 3px 0; }
+#tuner label { font-size: 12px; color: var(--ink-dim); }
+#tuner input { width: 100%; font: inherit; font-size: 12px; background: #171a20; color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 3px; padding: 2px 5px; text-align: right;
+  font-family: ui-monospace, monospace; }
+
+.pill {
+  display: inline-block; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 2px; background: #2a2e36; color: var(--ink-dim);
+}
+.pill.good { background: #24361f; color: var(--good); }
+.pill.warn { background: #382b18; color: var(--warn); }
+.pill.bad  { background: #3a1f1d; color: var(--bad); }
