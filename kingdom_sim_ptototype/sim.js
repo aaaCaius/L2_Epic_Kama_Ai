@@ -41,6 +41,7 @@ const DEFAULT_CFG = {
   coverCycles:     3,
   tierUpTicks:     26,   // growth is deliberately slow - a tier is hard-won
   tierDownTicks:   6,
+  postureTicks:    4,    // weeks a posture must be warranted before the realm shifts
   tierUpFulfil:    0.90,
   tierDownFulfil:  0.70,
   basePrice:       20,
@@ -49,10 +50,10 @@ const DEFAULT_CFG = {
   treasuryReserve: 20000,
   wagePerHead:     4,
   townIncomePerHead: 40,   // what a citizen's trade yields the town each week
-  garrisonCost:    2500,
+  garrisonCost:    800,
   threatGrowth:    0.9,
   raidThreshold:   55,
-  wildYield:       120,
+  wildYield:       90,
   standingDrift:   0.4,
   requisitionHit:  16,
   refusalHit:      14,
@@ -60,6 +61,8 @@ const DEFAULT_CFG = {
   importMarkup:    1.6,
   embargoMarkup:   4.0,
 };
+
+const MAP = window.GludioMap;
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const sum = (a) => a.reduce((x, y) => x + y, 0);
@@ -90,73 +93,66 @@ function makeWorld(seed, cfgOverrides) {
     army: { troops: 120, equipment: 60 },
     budgets: { marshal: 0, justiciar: 0, envoy: 0, towns: 0 },
     spent: { marshal: 0, justiciar: 0, envoy: 0, towns: 0 },
-    // Deliberately incomplete: Gludio can make no medicine and no luxury.
-    // That gap is what gives the Envoy a job and makes an embargo lethal.
-    endowment: ['food', 'cloth', 'arms', 'materials'],
+    // Taken from the real map. Gludio has farms, a lake, an estate, a mill, a
+    // quarry and an arena - and no mine and no apothecary anywhere in it. Arms
+    // and medicine must be garrisoned for or bought abroad.
+    endowment: MAP.endowment.slice(),
+    mustSource: MAP.mustSource.slice(),
   };
 
-  function makeTown(id, name, pop, tier, mayorName) {
+  function makeTown(m) {
     return {
-      id: id, name: name, pop: pop, tier: tier,
+      id: m.id, name: m.loc, loc: m.loc, x: m.x, y: m.y,
+      pop: m.pop, tier: m.tier,
       satisfaction: 60,
-      stock: Object.fromEntries(RES_KEYS.map((k) => [k, Math.round(pop * 2)])),
+      stock: Object.fromEntries(RES_KEYS.map((k) => [k, Math.round(m.pop * 2)])),
       treasury: 30000,
       fulfil: Object.fromEntries(RES_KEYS.map((k) => [k, 1])),
       overall: 1,
       upTicks: 0, downTicks: 0,
       localTax: 0.10,
       rebel: false, defectedTo: null,
-      mayor: { name: mayorName, standing: 60, mood: 'content', order: null, lastRefusal: null },
+      mayor: { name: m.mayor, standing: 60, mood: 'content', order: null, lastRefusal: null },
       shops: [],
     };
   }
 
-  w.towns = [
-    makeTown('talking', 'Talking Island Village', 120, 1, 'Reeve Almond'),
-    makeTown('gludin', 'Gludin Village', 240, 2, 'Mayor Corran'),
-    makeTown('gludio', 'Town of Gludio', 300, 2, 'Mayor Vasek'),
-  ];
+  w.towns = MAP.towns.map(makeTown);
 
-  const shop = (id, name, sells) => ({ id: id, name: name, sells: sells, stock: 30, sold: 0 });
-  w.towns[0].shops = [shop('ti-gro', 'Grocer', 'food'), shop('ti-smi', 'Smithy', 'arms')];
-  w.towns[1].shops = [shop('gd-gro', 'Grocer', 'food'), shop('gd-wea', 'Weaver', 'cloth'), shop('gd-smi', 'Smithy', 'arms')];
-  w.towns[2].shops = [shop('gl-gro', 'Grocer', 'food'), shop('gl-apo', 'Apothecary', 'medicine'), shop('gl-arm', 'Armoury', 'arms')];
-
-  function makeEnt(id, name, type, makes, rate) {
-    return {
-      id: id, name: name, type: type, makes: makes, capacity: rate,
-      owner: 'npc', stock: 20, treasury: 12000,
-      standing: 60, taxOwed: 0, mood: 'content',
-      contract: null, lastSoldTo: null, requisitions: 0, hiding: false,
-    };
+  // A town's shops sell what its people need. Note that an armoury and an
+  // apothecary can only be stocked from garrisons or imports.
+  const shopFor = { food: 'Grocer', cloth: 'Weaver', materials: 'Mason',
+                    arms: 'Armoury', medicine: 'Apothecary', luxury: 'Vintner' };
+  for (const t of w.towns) {
+    t.shops = unlockedFor(t.tier).map((k) => ({
+      id: t.id + '-' + k, name: shopFor[k], sells: k, stock: 30, sold: 0,
+    }));
   }
 
-  w.enterprises = [
-    makeEnt('farm-n', 'Northfield Farm', 'farm', 'food', 520),
-    makeEnt('farm-s', 'Southmarsh Farm', 'farm', 'food', 400),
-    makeEnt('past', 'Highmoor Pasture', 'pasture', 'cloth', 330),
-    makeEnt('mine', 'Ironhold Mine', 'mine', 'arms', 160),
-    makeEnt('quar', 'Grey Quarry', 'quarry', 'materials', 230),
-  ];
+  w.enterprises = MAP.enterprises.map((m) => ({
+    id: m.id, name: m.loc, loc: m.loc, x: m.x, y: m.y,
+    type: m.type, makes: m.makes, capacity: m.rate,
+    owner: 'npc', stock: m.makes ? 20 : 0, treasury: 12000,
+    standing: 60, taxOwed: 0, mood: 'content',
+    contract: null, lastSoldTo: null, requisitions: 0, hiding: false,
+  }));
 
   w.fortress = {
-    id: 'fort', name: 'Border Keep', owner: 'npc',
+    id: MAP.fortress.id, name: MAP.fortress.loc, loc: MAP.fortress.loc,
+    x: MAP.fortress.x, y: MAP.fortress.y, owner: 'npc',
     commander: { name: 'Captain Ruedi', standing: 65 },
-    garrison: 60, equipment: 30, readiness: 0.6,
+    garrison: MAP.fortress.garrison, equipment: 30, readiness: 0.6,
   };
 
-  w.wildSites = [
-    { id: 'cave', name: 'Windy Caves', threat: 20, yields: 'materials', garrisoned: false },
-    { id: 'ruin', name: 'Elven Ruins', threat: 14, yields: 'medicine', garrisoned: false },
-    { id: 'camp', name: 'Abandoned Camp', threat: 34, yields: 'materials', garrisoned: false },
-  ];
+  w.castle = { id: MAP.castle.id, name: MAP.castle.loc, loc: MAP.castle.loc, x: MAP.castle.x, y: MAP.castle.y };
+  w.landmarks = MAP.landmarks.slice();
 
-  // Neighbours hold what Gludio cannot make. That is the entire point.
-  w.neighbours = [
-    { id: 'oren', name: 'Oren', endowment: ['medicine', 'luxury'], relation: 'neutral', opinion: 50 },
-    { id: 'dion', name: 'Dion', endowment: ['food', 'luxury'], relation: 'neutral', opinion: 55 },
-    { id: 'clan', name: 'Clan Ravenhold', endowment: ['materials'], relation: 'neutral', opinion: 45, isClan: true },
-  ];
+  w.wildSites = MAP.wildSites.map((m) => ({
+    id: m.id, name: m.loc, loc: m.loc, x: m.x, y: m.y,
+    threat: m.threat, yields: m.yields, garrisoned: false,
+  }));
+
+  w.neighbours = MAP.neighbours.map((n) => Object.assign({}, n));
 
   say(w, 'realm', 'The realm of Gludio begins its records.');
   return w;
@@ -453,9 +449,22 @@ function countGovern(w) {
     { label: 'GROW', score: (worst > 0.92 ? 150 : 0) + (spendable > 120000 ? 60 : 0), note: 'spendable ' + Math.round(spendable) },
   ];
   const pick = decide(w, 'The Count', opts, 'setting the realm objective');
+
+  // A realm does not change its whole posture on one bad week. Without this,
+  // a single dip flipped the Count to SURVIVE, which unwound every garrison at
+  // once - and the next week put them all back. Governments have inertia.
   if (pick && pick.label !== r.objective) {
-    say(w, 'realm', 'The Count sets the realm to ' + pick.label + '.', pick.label === 'SURVIVE' ? 'warn' : 'info');
-    r.objective = pick.label;
+    r.pendingObjective = pick.label === r.pendingObjective ? r.pendingObjective : pick.label;
+    r.pendingTicks = (pick.label === r.pendingObjective ? (r.pendingTicks || 0) : 0) + 1;
+    if (r.pendingTicks >= w.cfg.postureTicks) {
+      say(w, 'realm', 'The Count sets the realm to ' + pick.label + '.', pick.label === 'SURVIVE' ? 'warn' : 'info');
+      r.objective = pick.label;
+      r.pendingTicks = 0;
+      r.pendingObjective = null;
+    }
+  } else {
+    r.pendingTicks = 0;
+    r.pendingObjective = null;
   }
 
   const pot = Math.max(0, spendable);
@@ -497,40 +506,41 @@ function countGovern(w) {
 
 function marshalAct(w) {
   const r = w.realm;
-  let spent = 0;
 
-  for (const s of w.wildSites) {
-    const cost = w.cfg.garrisonCost;
+  // Rank every site first, then fund down the list until the budget is gone.
+  // Walking the list greedily meant the same sites always ran dry at the same
+  // point, so the Marshal dropped and retook them week after week.
+  const ranked = w.wildSites.map((s) => {
     const needsYield = w.towns.some((t) => !t.defectedTo && t.stock[s.yields] < t.pop * RESOURCES[s.yields].rate * 2);
     const spilling = s.threat > w.cfg.raidThreshold;
-    const canPay = cost <= (r.budgets.marshal - spent);
+    const score = (needsYield ? 90 : 20) + (spilling ? 80 : 0)
+      + (r.objective === 'GROW' ? 40 : 0) - (r.objective === 'SURVIVE' ? 70 : 0)
+      + (s.garrisoned ? 35 : 0);   // holding ground is cheaper than retaking it
+    const note = (needsYield ? 'we need its ' + RESOURCES[s.yields].label.toLowerCase() : 'the yield is not needed')
+      + (spilling ? ', and its threat is spilling out' : '')
+      + (s.garrisoned ? ', and we already hold it' : '');
+    return { site: s, score: score, note: note, label: 'hold ' + s.name };
+  }).sort((a, b) => b.score - a.score);
 
-    const opts = [
-      {
-        label: 'garrison ' + s.name,
-        score: (needsYield ? 90 : 20) + (spilling ? 80 : 0) + (r.objective === 'GROW' ? 40 : 0)
-          - (r.objective === 'SURVIVE' ? 70 : 0) - (canPay ? 0 : 200),
-        note: (needsYield ? 'we need its ' + RESOURCES[s.yields].label.toLowerCase() : 'the yield is not needed')
-          + (spilling ? ', and its threat is spilling out' : ''),
-        act: 'hold', site: s,
-      },
-      {
-        label: 'leave ' + s.name,
-        score: 60 + (r.objective === 'SURVIVE' ? 60 : 0) - (spilling ? 50 : 0),
-        note: 'spare the troops and the coin',
-        act: 'leave', site: s,
-      },
-    ];
-    const pick = decide(w, 'Marshal', opts, 'wild site: ' + s.name);
-    if (!pick) continue;
-    if (pick.act === 'hold') {
-      if (!s.garrisoned) say(w, 'marshal', 'The Marshal garrisons ' + s.name + '.');
-      s.garrisoned = true; spent += cost;
-    } else {
-      if (s.garrisoned) say(w, 'marshal', 'The Marshal withdraws from ' + s.name + '.', 'warn');
-      s.garrisoned = false;
+  let spent = 0;
+  const held = [];
+  for (const cand of ranked) {
+    const affordable = spent + w.cfg.garrisonCost <= r.budgets.marshal;
+    const worth = cand.score > 55;
+    const take = affordable && worth;
+    if (take) { spent += w.cfg.garrisonCost; held.push(cand.site.name); }
+    if (take && !cand.site.garrisoned) say(w, 'marshal', 'The Marshal garrisons ' + cand.site.name + '.');
+    if (!take && cand.site.garrisoned) {
+      say(w, 'marshal', 'The Marshal withdraws from ' + cand.site.name +
+        (affordable ? '.' : ' - there is no coin for it.'), 'warn');
     }
+    cand.site.garrisoned = take;
   }
+
+  decide(w, 'Marshal', ranked.slice(0, 4).map((c) => ({
+    label: c.label, score: c.score, note: c.note,
+  })), 'holding ' + held.length + ' of ' + w.wildSites.length + ' sites for ' + Math.round(spent));
+
   r.spent.marshal = spent;
   r.treasury -= spent;
 }

@@ -164,3 +164,48 @@ h1 { font-size: 26px; margin: 0 0 2px; letter-spacing: .01em; }
 .pill.good { background: #24361f; color: var(--good); }
 .pill.warn { background: #382b18; color: var(--warn); }
 .pill.bad  { background: #3a1f1d; color: var(--bad); }
+
+/* ---------- region map ---------- */
+#map {
+  position: relative; width: 100%; padding-top: 118%;
+  background:
+    radial-gradient(ellipse at 55% 40%, #2a2c22 0%, #20221c 42%, #191b18 70%),
+    var(--panel);
+  border: 1px solid var(--rule); border-radius: 4px; overflow: hidden;
+}
+#map .inner { position: absolute; inset: 0; }
+.node {
+  position: absolute; transform: translate(-50%, -50%);
+  cursor: pointer; text-align: center; white-space: nowrap;
+}
+.node .dot {
+  width: 11px; height: 11px; border-radius: 50%; margin: 0 auto;
+  border: 1px solid rgba(0,0,0,.6); box-shadow: 0 0 0 2px rgba(0,0,0,.25);
+}
+.node .lbl {
+  font-size: 10.5px; color: var(--ink-dim); margin-top: 2px;
+  text-shadow: 0 1px 3px #000, 0 0 6px #000; letter-spacing: .01em;
+}
+.node:hover .lbl { color: #fff; }
+.node:hover .dot { box-shadow: 0 0 0 3px rgba(201,162,39,.55); }
+
+.node.town .dot   { width: 15px; height: 15px; background: var(--gold); }
+.node.town .lbl   { color: var(--ink); font-size: 12px; }
+.node.castle .dot { width: 18px; height: 18px; background: #e0c352; border-radius: 3px; }
+.node.castle .lbl { color: var(--gold); font-size: 12.5px; }
+.node.fort .dot   { width: 13px; height: 13px; background: var(--accent); border-radius: 2px; }
+.node.ent .dot    { background: var(--good); }
+.node.port .dot   { background: #58a8b8; }
+.node.wild .dot   { background: var(--bad); }
+.node.wild.held .dot { background: var(--accent); }
+.node.mark .dot   { width: 6px; height: 6px; background: #4a4f46; }
+.node.mark .lbl   { color: var(--ink-faint); font-size: 9.5px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--ink-dim); }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+.loc {
+  font-size: 12px; color: var(--ink-faint); margin-top: -14px; margin-bottom: 16px;
+  font-family: ui-monospace, monospace;
+}

@@ -9,7 +9,7 @@
 
 const S = window.Sim;
 let W = S.makeWorld(7);
-let view = { kind: 'realm', id: null };
+let view = { kind: 'map', id: null };
 let timer = null;
 let speed = 0;
 
@@ -72,7 +72,7 @@ function stockCard(t) {
 function viewRealm() {
   const r = W.realm;
   const live = W.towns.filter((t) => !t.defectedTo);
-  let h = '<h1>' + esc(r.name) + '</h1><div class="subtitle">A castle, three towns, a keep, five enterprises and three wild places.</div>';
+  let h = '<h1>' + esc(r.name) + '</h1><div class="subtitle">' + W.towns.length + ' towns, a castle, a keep, ' + W.enterprises.length + ' enterprises and ' + W.wildSites.length + ' wild places &mdash; all drawn from the real map.</div>';
 
   h += '<div class="card"><h3>The realm</h3><div class="grid">' +
     kv('Objective', pill(r.objective, r.objective === 'SURVIVE' ? 'bad' : r.objective === 'GROW' ? 'good' : '')) +
@@ -114,6 +114,48 @@ function viewRealm() {
       'holds ' + n.endowment.map((x) => S.RESOURCES[x].label).join(', '));
   }
   return h + '</div>';
+}
+
+// The region drawn from the real Interlude map. Every node is a place that
+// actually exists; clicking one goes to whatever the sim models there.
+function viewMap() {
+  let n = '';
+  const at = (o, cls, kind, id, label) =>
+    '<div class="node ' + cls + '" style="left:' + o.x + '%;top:' + o.y + '%"' +
+    (kind ? ' onclick="go(\'' + kind + '\',' + (id ? "'" + id + "'" : 'null') + ')"' : '') +
+    '><div class="dot"></div><div class="lbl">' + esc(label) + '</div></div>';
+
+  W.landmarks.forEach((m) => { n += at(m, 'mark', null, null, m.loc); });
+  W.enterprises.forEach((e) => {
+    n += at(e, e.type === 'port' ? 'port' : 'ent', 'ent', e.id, e.loc);
+  });
+  W.wildSites.forEach((s2) => {
+    n += at(s2, 'wild' + (s2.garrisoned ? ' held' : ''), 'wild', s2.id, s2.loc);
+  });
+  n += at(W.fortress, 'fort', 'fort', null, W.fortress.loc);
+  W.towns.forEach((t) => { n += at(t, 'town', 'town', t.id, t.loc); });
+  n += at(W.castle, 'castle', 'castle', null, W.castle.loc);
+
+  return '<h1>The Gludio Region</h1>' +
+    '<div class="subtitle">Every place below is on the real Interlude map. ' +
+    'The region has farms, a lake, an estate, a mill, a quarry and an arena &mdash; ' +
+    'and <b>no mine and no apothecary anywhere in it</b>.</div>' +
+    '<div id="map"><div class="inner">' + n + '</div></div>' +
+    '<div class="legend">' +
+    '<span><i style="background:#c9a227"></i>town</span>' +
+    '<span><i style="background:#e0c352;border-radius:2px"></i>castle</span>' +
+    '<span><i style="background:#6f9ec4;border-radius:2px"></i>keep / garrisoned</span>' +
+    '<span><i style="background:#6fae62"></i>enterprise</span>' +
+    '<span><i style="background:#58a8b8"></i>harbour</span>' +
+    '<span><i style="background:#c9584f"></i>wild &mdash; unheld</span>' +
+    '<span><i style="background:#4a4f46"></i>landmark</span>' +
+    '</div>' +
+    '<div class="card" style="margin-top:16px"><h3>What the region cannot make</h3>' +
+    '<div>' + W.realm.mustSource.map((k) => '<b>' + S.RESOURCES[k].label + '</b>').join(' and ') +
+    ' have no honest source here. They come only from <b>garrisoning</b> the barracks, ruins and ' +
+    'checkpoints &mdash; or from buying them abroad through a harbour.</div>' +
+    '<div class="hint">That is what makes the Marshal a necessity rather than an expense: ' +
+    'no garrisons, no weapons. It fell out of using the real map instead of invented sites.</div></div>';
 }
 
 function tile(kind, id, title, desc, meta) {
@@ -201,7 +243,8 @@ function lessonLine(name) {
 function viewTown(id) {
   const t = W.towns.find((x) => x.id === id);
   if (!t) return viewRealm();
-  let h = crumb([['realm', null, 'Realm']]) + '<h1>' + esc(t.name) + '</h1>' +
+  let h = crumb([['map', null, 'Map'], ['realm', null, 'Realm']]) + '<h1>' + esc(t.name) + '</h1>' +
+    '<div class="loc">on the map: ' + esc(t.loc) + '</div>' +
     '<div class="subtitle">' + S.TIER_NAMES[t.tier] + ' &middot; ' + num(t.pop) + ' souls' +
     (t.rebel ? ' &middot; <b style="color:var(--bad)">in revolt</b>' : '') +
     (t.defectedTo ? ' &middot; <b style="color:var(--bad)">defected to ' + esc(t.defectedTo) + '</b>' : '') + '</div>';
@@ -259,7 +302,8 @@ function viewTown(id) {
 function viewEnterprise(id) {
   const e = W.enterprises.find((x) => x.id === id);
   if (!e) return viewRealm();
-  let h = crumb([['realm', null, 'Realm']]) + '<h1>' + esc(e.name) + '</h1>' +
+  let h = crumb([['map', null, 'Map'], ['realm', null, 'Realm']]) + '<h1>' + esc(e.name) + '</h1>' +
+    '<div class="loc">on the map: ' + esc(e.loc) + '</div>' +
     '<div class="subtitle">' + e.type + ' &middot; independent &middot; ' +
     (e.owner === 'npc' ? 'held by its own people' : 'player held') + '</div>';
 
@@ -285,7 +329,8 @@ function viewEnterprise(id) {
 
 function viewFort() {
   const f = W.fortress;
-  return crumb([['realm', null, 'Realm']]) + '<h1>' + esc(f.name) + '</h1>' +
+  return crumb([['map', null, 'Map'], ['realm', null, 'Realm']]) + '<h1>' + esc(f.name) + '</h1>' +
+    '<div class="loc">on the map: ' + esc(f.loc) + '</div>' +
     '<div class="subtitle">' + esc(f.commander.name) + ' commands.</div>' +
     '<div class="card"><h3>The keep</h3><div class="grid">' +
     kv('Garrison', num(f.garrison)) + kv('Equipment', num(f.equipment)) +
@@ -296,8 +341,10 @@ function viewFort() {
 function viewWild(id) {
   const s = W.wildSites.find((x) => x.id === id);
   if (!s) return viewRealm();
-  return crumb([['realm', null, 'Realm']]) + '<h1>' + esc(s.name) + '</h1>' +
-    '<div class="subtitle">Dangerous and profitable at once.</div>' +
+  return crumb([['map', null, 'Map'], ['realm', null, 'Realm']]) + '<h1>' + esc(s.name) + '</h1>' +
+    '<div class="loc">on the map: ' + esc(s.loc) + '</div>' +
+    '<div class="subtitle">Dangerous and profitable at once &mdash; and one of the few local sources of ' +
+    S.RESOURCES[s.yields].label + '.</div>' +
     '<div class="card"><h3>The site</h3><div class="grid">' +
     kv('Status', pill(s.garrisoned ? 'garrisoned' : 'unheld', s.garrisoned ? 'good' : 'warn')) +
     kv('Threat', Math.round(s.threat)) + kv('Yields', S.RESOURCES[s.yields].label) +
@@ -330,7 +377,8 @@ function crumb(parts) {
 /* ---------- render -------------------------------------------------------- */
 
 function renderNav() {
-  let h = '<h2 class="sec">Realm</h2>' + navItem('realm', null, W.realm.name, 'week ' + W.tick);
+  let h = '<h2 class="sec">Realm</h2>' + navItem('map', null, 'Region map', W.wildSites.filter((s2) => s2.garrisoned).length + ' held') +
+    navItem('realm', null, W.realm.name, 'week ' + W.tick);
   h += '<h2 class="sec">Castle</h2>' + navItem('castle', null, 'The Castle', W.realm.objective);
   ['Marshal', 'Justiciar', 'Chancellor', 'Envoy'].forEach((a) => { h += navItem('advisor', a, a, ''); });
   h += '<h2 class="sec">Towns</h2>';
@@ -352,6 +400,7 @@ function navItem(kind, id, name, sub) {
 
 function renderDetail() {
   const v = {
+    map: viewMap,
     realm: viewRealm, castle: viewCastle, advisor: () => viewAdvisor(view.id),
     town: () => viewTown(view.id), ent: () => viewEnterprise(view.id),
     fort: viewFort, wild: () => viewWild(view.id), nb: () => viewNeighbour(view.id),
@@ -392,7 +441,7 @@ function setSpeed(s) {
 function reset() {
   const seed = +($('seed').value || 7);
   W = S.makeWorld(seed, readTuner());
-  view = { kind: 'realm', id: null };
+  view = { kind: 'map', id: null };
   render();
 }
 
