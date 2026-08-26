@@ -209,3 +209,19 @@ h1 { font-size: 26px; margin: 0 0 2px; letter-spacing: .01em; }
   font-size: 12px; color: var(--ink-faint); margin-top: -14px; margin-bottom: 16px;
   font-family: ui-monospace, monospace;
 }
+
+/* ---------- world map ---------- */
+#map.worldmap { padding-top: 96%; background:
+  radial-gradient(ellipse at 50% 45%, #232a26 0%, #1c211e 48%, #171a18 78%), var(--panel); }
+.node.region .dot { width: 16px; height: 16px; }
+.node.region.mine .dot { width: 20px; height: 20px; background: var(--gold) !important; }
+.node.region .lbl { font-size: 13px; color: var(--ink); }
+.node.region .sub2 { font-size: 10px; color: var(--ink-faint); font-family: ui-monospace, monospace;
+  text-shadow: 0 1px 3px #000; }
+.node.r-good .dot { background: var(--good); }
+.node.r-warn .dot { background: var(--warn); }
+.node.r-bad  .dot { background: var(--bad); }
+.road { position: absolute; height: 1px; background: #3a4038; transform-origin: 0 50%;
+  opacity: .8; pointer-events: none; }
+.road.road-good { background: #3f6a44; height: 2px; }
+.road.road-bad  { background: #6a3a36; height: 2px; }

@@ -17,31 +17,50 @@ constants become the starting values in `economy.properties`.
 
 ---
 
-## The region is the real map
+## The whole of Aden, from the real map
 
-Everything in the prototype is now a place that actually exists in the Gludio region: Fellmere
-Harvesting Grounds, Windawood Manor, the Orc Barracks, Ol Mahum Checkpoint, the Elven Ruins, both
-harbours. The **Region map** view draws them where they sit, and every entity panel says which real
-location it stands for. `regions.js` is the whole mapping — one file, editable.
+**All nine castle regions run as full kingdoms** — 19 towns, 40 enterprises, 45 wild sites and 12
+landmarks, **134 real places** in total. Every one exists in the game: Fellmere Harvesting Grounds,
+the Mithril Mines, Cruma Tower, the Enchanted Valley, Dragon Valley, the Hot Springs, Primeval Isle.
+`world.js` is the whole mapping in one editable file, and every entity panel names the real location it
+stands for.
 
-**And using the real map changed the design.** The Gludio region has farms, a lake, an estate, a mill,
-a quarry and an arena. It has **no mine and no apothecary anywhere in it.** Food, cloth, materials and
-luxury all have honest local sources; **arms and medicine do not.** They can only come from garrisoning
-dangerous places — the barracks, the ruins, the checkpoints — or from buying them abroad through a
-harbour.
+The **world map** shows all nine realms with the roads between them, coloured by how well fed they are
+and by whether each road carries a treaty or an embargo. Click a realm to drop into its own regional
+map; click a place to see what it is doing and why.
 
-So the Marshal stopped being an optional expense. **No garrisons, no weapons.** That is a far better
-version of the wild-site tradeoff than the one I invented, and it fell straight out of the terrain.
+### The real terrain wrote the economy
+
+| Realm | Makes | Must buy |
+|---|---|---|
+| Gludio | food, cloth, materials, luxury | **arms, medicine** |
+| Dion | food, medicine, cloth, materials | arms, luxury |
+| Giran | materials, luxury | **food, cloth, medicine, arms** |
+| Oren | medicine, cloth, food, luxury | materials, arms |
+| Aden | luxury, cloth, medicine | **food, materials, arms** |
+| Innadril | luxury, food | cloth, materials, medicine, arms |
+| Goddard | medicine, food, materials | cloth, arms, luxury |
+| Rune | medicine, food, cloth | materials, arms, luxury |
+| Schuttgart | **arms**, materials, food | cloth, medicine, luxury |
+
+Nobody is self-sufficient, and that is not a balance decision — it is what the map says. Gludio has no
+mine and no apothecary. Giran is a great harbour with no farmland at all. **Schuttgart's Dwarven mines
+are where the iron of Aden actually comes from**, which makes it the realm everyone needs and nobody
+can ignore.
+
+**This fixed the biggest open finding.** Diplomacy used to be decoration because the neighbours were
+stubs. With nine running realms that genuinely lack things, the Envoys sign **36 treaties on their own**
+inside three years — because they have to.
 
 ## What is in it
 
-- **One kingdom** — Gludio: three towns, a castle, a keep, eight enterprises, thirteen wild sites
+- **Nine kingdoms** — every castle region of Aden, each with its own Count, advisors, towns and enterprises
 - **The Count**, and four advisors: Marshal, Justiciar, Chancellor, Envoy
 - **Three Mayors** with real discretion — they may comply, divert, send half, or refuse
 - **Escalation** — refusal can end in deposition, rebellion, or defection to a rival
 - **Independent enterprises** that negotiate, pay tax, take contracts, and resent requisition
 - **Contracts as quests** — posted by towns, taken by enterprises, with consequences for failure
-- **Foreign trade** — Gludio can make no arms and no medicine, so it must garrison for them or buy them abroad
+- **Real foreign trade** — nine realms, each short of something, trading along the actual road network
 - **Wild sites** — dangerous and profitable at once
 
 ## How to use it
@@ -68,7 +87,7 @@ The winning line is highlighted.
 
 ## What building it already found
 
-Eleven bugs, none of which were visible in the written design. This is the argument for the prototype.
+Thirteen bugs, none of which were visible in the written design. This is the argument for the prototype.
 
 1. **Towns had no income at all.** They paid wages and remitted tax and bought goods, and nothing ever
    paid them. Treasury to zero, nothing bought, fulfilment to zero, permanent `SURVIVE`.
@@ -96,7 +115,13 @@ Eleven bugs, none of which were visible in the written design. This is the argum
 10. **The Marshal walked its list greedily** and always ran out of budget at the same point, so the
    same sites were dropped and retaken forever. It now ranks every site and funds down the list, which
    is both stabler and a more honest model of how a commander actually allocates.
-11. **The supply target sat below the growth gate** — enterprises sold toward three weeks of *current*
+11. **Import-dependent realms had no way to pay for imports.** The crown bought food out of the realm
+   treasury and the towns that ate it were never charged — so Giran's treasury drained 211k → 10k while
+   its town's grew 40k → 210k, and then it starved with a full purse next door. Towns now pay for what
+   they receive; the crown negotiates the trade and takes a tariff.
+12. **The Envoy's budget was a flat share**, so a realm buying four of its six goods ran on the same
+   import allowance as one buying two. It now scales with how dependent the realm actually is.
+13. **The supply target sat below the growth gate** — enterprises sold toward three weeks of *current*
    need while promotion required four weeks of the *next tier's* need. Supply throttled just under the
    threshold and no town could ever rise. This is the F3/F4 shape from the economy test, appearing again
    in a completely different system.
@@ -112,8 +137,9 @@ Honest list. These are findings, not oversights:
   sites and a fixed budget, the Marshal holds as many as it can pay for. That is not yet the
   "is the yield worth the garrison?" decision the design wants — the yield needs to matter more and the
   cost needs to bite harder.
-- **The Envoy never signs anything.** Opinion has to exceed 55 and nothing moves it, so every relation
-  stays neutral and diplomacy never gets tested.
+- **Some import-dependent realms still oscillate.** Giran and Schuttgart swing between fed and starving
+  across years. The structure is right — they trade for what they lack — but the numbers are not settled.
+  This is Constants-drawer territory: try `tradeMarkup`, `townIncomePerHead` and the enterprise rates.
 - **A stable realm produces no politics.** Orders only fire when total threat exceeds 90, so a
   well-garrisoned kingdom never generates a standoff. Force one with the **Order a levy** button on a
   struggling town.
@@ -125,7 +151,7 @@ Honest list. These are findings, not oversights:
 
 | | |
 |---|---|
-| `regions.js` | the Gludio region taken from the real map — every location, and what it is |
+| `world.js` | all nine regions from the real map — every location, and what it is |
 | `sim.js` | the simulation core — no DOM, and the part that becomes Java |
 | `ui.js` | rendering and interaction |
 | `style.css` | presentation |
